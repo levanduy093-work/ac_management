@@ -1,2 +1,4 @@
 modbus-tk
 pyserial
+tabulate
+pandas
