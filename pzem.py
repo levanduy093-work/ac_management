@@ -1,72 +1,121 @@
-# Reading PZEM-004t power sensor (new version v3.0) through Modbus-RTU protocol over TTL UART
-# Run as:
-# python pzem.py
-
-# To install dependencies in your conda environment: 
-# conda install pyserial
-# pip install modbus-tk
+# Reading multiple PZEM-004t sensors (v3.0) concurrently using Modbus-RTU
+# The script automatically detects PL2303 USB-to-Serial adapters and reads from them every second.
 
 import serial
 import modbus_tk.defines as cst
 from modbus_tk import modbus_rtu
+import serial.tools.list_ports
+import threading
+import time
 
-# --- CONFIGURATION ---
-# NOTE: You might need to change the port to the correct one for your device.
-# On your system, it could be '/dev/cu.PL2303-USBtoUART110' or '/dev/cu.usbserial-110'
-# Use the command `python -m serial.tools.list_ports` to find the correct port.
-PORT = '/dev/cu.PL2303-USBtoUART110' 
+def find_pzem_ports():
+    """
+    Scans for and returns a list of serial ports that appear to be connected to
+    PZEM-004t sensors via a USB-to-Serial adapter (like PL2303, CH340, etc.).
+    """
+    pzem_ports = []
+    ports = serial.tools.list_ports.comports()
+    for port in ports:
+        # Make the check case-insensitive and more general.
+        desc_lower = port.description.lower() if port.description else ""
+        device_lower = port.device.lower()
+        hwid_lower = port.hwid.lower() if port.hwid else ""
 
-master = None
-sensor = None
+        # Add more keywords if your adapter has a different description
+        keywords = ["pl2303", "usb-serial", "usb serial", "ch340"]
+        
+        if any(keyword in desc_lower for keyword in keywords) or \
+           any(keyword in device_lower for keyword in keywords) or \
+           "vid:067b" in hwid_lower:  # Check for Prolific Vendor ID
+            pzem_ports.append(port.device)
+            
+    return pzem_ports
 
-try:
-    # Connect to the sensor
-    sensor = serial.Serial(
-        port=PORT,
-        baudrate=9600,
-        bytesize=8,
-        parity='N',
-        stopbits=1,
-        xonxoff=0
-    )
-
-    master = modbus_rtu.RtuMaster(sensor)
-    master.set_timeout(2.0)
-    master.set_verbose(True)
-
-    print("Reading data from sensor...")
-    # Read 10 registers starting from 0
-    data = master.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
-
-    voltage = data[0] / 10.0 # [V]
-    current = (data[1] + (data[2] << 16)) / 1000.0 # [A]
-    power = (data[3] + (data[4] << 16)) / 10.0 # [W]
-    energy = data[5] + (data[6] << 16) # [Wh]
-    frequency = data[7] / 10.0 # [Hz]
-    powerFactor = data[8] / 100.0
-    alarm = data[9] # 0 = no alarm
-
-    print('Voltage [V]: ', voltage)
-    print('Current [A]: ', current)
-    print('Power [W]: ', power) # active power (V * I * power factor)
-    print('Energy [Wh]: ', energy)
-    print('Frequency [Hz]: ', frequency)
-    print('Power factor []: ', powerFactor)
-    print('Alarm : ', alarm)
-
-    # Changing power alarm value to 100 W
-    # print("Setting alarm threshold to 100W")
-    # master.execute(1, cst.WRITE_SINGLE_REGISTER, 1, output_value=100)
-
-except Exception as e:
-    print(f"An error occurred: {e}")
-
-finally:
+def read_pzem_data(port):
+    """
+    Connects to a PZEM sensor on a given port, reads its data, and prints it.
+    This function is designed to be run in a separate thread for each sensor.
+    """
+    master = None
+    sensor = None
     try:
-        if master:
-            master.close()
-        if sensor and sensor.is_open:
-            sensor.close()
-            print("Sensor connection closed.")
+        # Connect to the sensor
+        sensor = serial.Serial(
+            port=port,
+            baudrate=9600,
+            bytesize=8,
+            parity='N',
+            stopbits=1,
+            xonxoff=0,
+            timeout=1.0  # Set a timeout for the serial connection
+        )
+
+        master = modbus_rtu.RtuMaster(sensor)
+        master.set_timeout(2.0)
+        # master.set_verbose(True) # Uncomment for detailed Modbus communication logging
+
+        # Read 10 registers starting from address 0
+        data = master.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
+
+        # Unpack data according to the PZEM-004t v3.0 documentation
+        voltage = data[0] / 10.0  # [V]
+        current = (data[1] + (data[2] << 16)) / 1000.0  # [A]
+        power = (data[3] + (data[4] << 16)) / 10.0  # [W]
+        energy = data[5] + (data[6] << 16)  # [Wh]
+        frequency = data[7] / 10.0  # [Hz]
+        powerFactor = data[8] / 100.0
+        alarm = data[9]  # 0 = no alarm, 1 = alarm
+
+        # Print the collected data in a structured format
+        print(f"--- Data from {port} ---")
+        print(f"  Voltage: {voltage:.1f} V")
+        print(f"  Current: {current:.3f} A")
+        print(f"  Power: {power:.1f} W")
+        print(f"  Energy: {energy} Wh")
+        print(f"  Frequency: {frequency:.1f} Hz")
+        print(f"  Power Factor: {powerFactor:.2f}")
+        print(f"  Alarm: {'ON' if alarm else 'OFF'}")
+        print("-" * (20 + len(port)))
+
     except Exception as e:
-        print(f"Error while closing connection: {e}")
+        print(f"Could not read from {port}: {e}")
+
+    finally:
+        # Ensure the connection is always closed
+        try:
+            if master:
+                master.close()
+            if sensor and sensor.is_open:
+                sensor.close()
+        except Exception as e:
+            # This can happen if the port was never opened, which is fine.
+            pass
+
+if __name__ == "__main__":
+    try:
+        while True:
+            # Find all connected PZEM devices
+            detected_ports = find_pzem_ports()
+            
+            if not detected_ports:
+                time.sleep(2) # Wait before scanning again if no devices found
+                continue
+            
+            threads = []
+            # Create and start a thread for each detected port
+            for port in detected_ports:
+                thread = threading.Thread(target=read_pzem_data, args=(port,))
+                threads.append(thread)
+                thread.start()
+
+            # Wait for all threads to complete before the next cycle
+            for thread in threads:
+                thread.join()
+
+            # Wait for 1 second before the next reading cycle
+            time.sleep(1)
+            
+    except KeyboardInterrupt:
+        print("\nExiting.")
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")

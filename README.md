@@ -1,10 +1,10 @@
-# Đọc dữ liệu cảm biến PZEM-004t v3.0 với Python
+# Đọc dữ liệu từ nhiều cảm biến PZEM-004t v3.0 với Python
 
-Đây là một script Python để đọc các thông số điện từ cảm biến công suất PZEM-004t (phiên bản v3.0) sử dụng giao thức Modbus-RTU qua kết nối nối tiếp (serial).
+Đây là một script Python để đọc đồng thời các thông số điện từ nhiều cảm biến công suất PZEM-004t (phiên bản v3.0) sử dụng giao thức Modbus-RTU qua kết nối nối tiếp (serial). Script sẽ tự động phát hiện các bộ chuyển đổi USB-to-Serial (như PL2303, CH340) và đọc dữ liệu từ mỗi cảm biến mỗi giây một lần.
 
 ## Các thông số đọc được
 
-Script sẽ đọc và hiển thị các thông số sau từ cảm biến:
+Script sẽ đọc và hiển thị các thông số sau từ mỗi cảm biến:
 
 -   **`Voltage [V]`**: Điện áp (đơn vị Volt).
 -   **`Current [A]`**: Dòng điện (đơn vị Ampe).
@@ -12,12 +12,12 @@ Script sẽ đọc và hiển thị các thông số sau từ cảm biến:
 -   **`Energy [Wh]`**: Điện năng tiêu thụ (đơn vị Watt-giờ). Đây là tổng lượng điện đã sử dụng theo thời gian.
 -   **`Frequency [Hz]`**: Tần số của dòng điện xoay chiều (đơn vị Hertz).
 -   **`Power factor []`**: Hệ số công suất. Tỷ lệ giữa công suất tác dụng và công suất biểu kiến. Giá trị từ 0 đến 1.
--   **`Alarm`**: Trạng thái cảnh báo công suất. `0` là bình thường, `1` là có cảnh báo (khi công suất vượt ngưỡng đã cài đặt).
+-   **`Alarm`**: Trạng thái cảnh báo công suất. `ON` là có cảnh báo, `OFF` là bình thường.
 
 ## Yêu cầu phần cứng
 
-1.  Cảm biến [PZEM-004t v3.0](https://www.emall.vn/products/module-do-cong-suat-ac-pzem-004t-v3-0-100a-giao-tiep-modbus-rtu).
-2.  Mạch chuyển USB to TTL Serial (ví dụ: PL2303, CP2102, FTDI) để kết nối cảm biến với máy tính.
+1.  Một hoặc nhiều cảm biến [PZEM-004t v3.0](https://www.emall.vn/products/module-do-cong-suat-ac-pzem-004t-v3-0-100a-giao-tiep-modbus-rtu).
+2.  Các mạch chuyển USB to TTL Serial tương ứng (ví dụ: PL2303, CP2102, FTDI) để kết nối mỗi cảm biến với máy tính.
 
 ## Cài đặt môi trường
 
@@ -51,54 +51,57 @@ Script này yêu cầu Python 3. Khuyến khích sử dụng môi trường ảo
     pip install pyserial modbus-tk
     ```
 
-## Cấu hình
-
-1.  Mở file `pzem.py`.
-2.  Tìm đến dòng `PORT = '...'`.
-3.  Thay đổi giá trị của `PORT` thành cổng serial của bạn.
-
-    Để tìm cổng serial, bạn có thể chạy lệnh sau trong terminal (với môi trường ảo đã được kích hoạt):
-    ```bash
-    python -m serial.tools.list_ports
-    ```
-    Kết quả sẽ liệt kê các cổng có sẵn. Chọn cổng tương ứng với mạch chuyển USB to TTL của bạn (ví dụ: `/dev/cu.usbserial-110` trên macOS, `COM3` trên Windows, hoặc `/dev/ttyUSB0` trên Linux).
-
-    Ví dụ:
-    ```python
-    PORT = '/dev/cu.PL2303-USBtoUART110'
-    ```
-
 ## Sử dụng
 
-Sau khi đã cài đặt và cấu hình, kết nối cảm biến với máy tính và chạy script bằng lệnh:
+Sau khi đã cài đặt môi trường, kết nối các cảm biến với máy tính và chạy script bằng lệnh:
 
 ```bash
 python pzem.py
 ```
 
+Script sẽ tự động quét và tìm các cổng serial có kết nối với bộ chuyển đổi USB-to-Serial và bắt đầu đọc dữ liệu từ chúng.
+
 ### Ví dụ đầu ra
 
 ```
-Reading data from sensor...
-Voltage [V]:  225.5
-Current [A]:  0.23
-Power [W]:  45.8
-Energy [Wh]:  1567
-Frequency [Hz]:  50.0
-Power factor []:  0.95
-Alarm :  0
-Sensor connection closed.
+Starting PZEM-004t multi-sensor monitoring script...
+Press Ctrl+C to stop.
+Scanning for available serial ports...
+  - Found port: /dev/ttyS0, desc: ttyS0, hwid: PNP0501
+  - Found port: /dev/ttyUSB0, desc: USB-Serial Controller, hwid: USB VID:PID=067B:2303 SER= LOCATION=1-1.2:1.0
+  - Found port: /dev/ttyUSB1, desc: USB-Serial Controller, hwid: USB VID:PID=067B:2303 SER= LOCATION=1-1.4:1.0
+    -> Matched PZEM-like device: /dev/ttyUSB0
+    -> Matched PZEM-like device: /dev/ttyUSB1
+
+Found devices on ports: /dev/ttyUSB0, /dev/ttyUSB1
+--- Data from /dev/ttyUSB0 ---
+  Voltage: 225.5 V
+  Current: 0.230 A
+  Power: 45.8 W
+  Energy: 1567 Wh
+  Frequency: 50.0 Hz
+  Power Factor: 0.95
+  Alarm: OFF
+----------------------------------
+--- Data from /dev/ttyUSB1 ---
+  Voltage: 226.1 V
+  Current: 1.510 A
+  Power: 330.2 W
+  Energy: 2450 Wh
+  Frequency: 50.0 Hz
+  Power Factor: 0.97
+  Alarm: OFF
+----------------------------------
 ```
 
 ## Chức năng nâng cao
 
 ### Thay đổi ngưỡng cảnh báo công suất
 
-Script có một đoạn mã đã được chú thích để thay đổi ngưỡng cảnh báo công suất. Để sử dụng, hãy bỏ chú thích các dòng sau trong file `pzem.py`:
+Script gốc có một đoạn mã đã được chú thích để thay đổi ngưỡng cảnh báo công suất. Trong phiên bản đa cảm biến này, bạn sẽ cần sửa đổi hàm `read_pzem_data` để gửi lệnh ghi tới một cảm biến cụ thể.
 
+Ví dụ, để đặt ngưỡng 100W cho cảm biến trên cổng `port`:
 ```python
-# print("Setting alarm threshold to 100W")
 # master.execute(1, cst.WRITE_SINGLE_REGISTER, 1, output_value=100)
 ```
-
-Thay đổi `output_value=100` thành giá trị công suất (W) bạn muốn đặt làm ngưỡng. Sau khi chạy script một lần với đoạn mã này, ngưỡng sẽ được lưu lại trong bộ nhớ của cảm biến. Bạn có thể chú thích lại đoạn mã này trong các lần chạy sau.
+Bạn có thể thêm logic để chỉ thực hiện việc này một lần hoặc dựa trên một điều kiện nhất định bên trong
