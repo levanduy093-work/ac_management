@@ -39,7 +39,7 @@ def read_pzem_data(port):
     master = None
     sensor = None
     try:
-        # Connect to the sensor
+        # Connect to the sensor with improved settings for Raspberry Pi
         sensor = serial.Serial(
             port=port,
             baudrate=9600,
@@ -47,15 +47,47 @@ def read_pzem_data(port):
             parity='N',
             stopbits=1,
             xonxoff=0,
-            timeout=1.0  # Set a timeout for the serial connection
+            timeout=2.0,  # Increased timeout for Raspberry Pi
+            write_timeout=2.0,  # Add write timeout
+            inter_byte_timeout=0.1  # Add inter-byte timeout
         )
+        
+        # Wait a bit for the port to stabilize
+        time.sleep(0.1)
+        
+        # Clear any existing data in buffers
+        sensor.reset_input_buffer()
+        sensor.reset_output_buffer()
 
         master = modbus_rtu.RtuMaster(sensor)
-        master.set_timeout(2.0)
+        master.set_timeout(3.0)  # Increased timeout
+        # master.set_interframe_delay(0.01)  # Not available in this version
         # master.set_verbose(True) # Uncomment for detailed Modbus communication logging
 
-        # Read 10 registers starting from address 0
-        data = master.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
+        # Wait a bit more before reading
+        time.sleep(0.05)
+        
+        # Try reading with retry mechanism
+        max_retries = 3
+        data = None
+        
+        for attempt in range(max_retries):
+            try:
+                # Read 10 registers starting from address 0
+                data = master.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
+                break  # Success, exit retry loop
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    print(f"Attempt {attempt + 1} failed for {port}: {e}. Retrying...")
+                    time.sleep(0.1)
+                    # Clear buffers before retry
+                    sensor.reset_input_buffer()
+                    sensor.reset_output_buffer()
+                else:
+                    raise e  # Last attempt failed, re-raise the exception
+        
+        if data is None:
+            raise Exception("Failed to read data after retries")
 
         # Unpack data according to the PZEM-004t v3.0 documentation
         voltage = data[0] / 10.0  # [V]
@@ -98,19 +130,17 @@ if __name__ == "__main__":
             detected_ports = find_pzem_ports()
             
             if not detected_ports:
+                print("No PZEM devices detected. Waiting...")
                 time.sleep(2) # Wait before scanning again if no devices found
                 continue
             
-            threads = []
-            # Create and start a thread for each detected port
+            print(f"Found {len(detected_ports)} PZEM device(s): {detected_ports}")
+            
+            # Read from ports sequentially instead of concurrently to avoid conflicts on Raspberry Pi
+            # This is more reliable for resource-constrained systems
             for port in detected_ports:
-                thread = threading.Thread(target=read_pzem_data, args=(port,))
-                threads.append(thread)
-                thread.start()
-
-            # Wait for all threads to complete before the next cycle
-            for thread in threads:
-                thread.join()
+                read_pzem_data(port)
+                time.sleep(0.1)  # Small delay between readings
 
             # Wait for 1 second before the next reading cycle
             time.sleep(1)
@@ -119,3 +149,4 @@ if __name__ == "__main__":
         print("\nExiting.")
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
+        time.sleep(1)  # Wait before continuing
