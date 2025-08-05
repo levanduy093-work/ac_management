@@ -89,3 +89,7 @@ và dự án này tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.
 - **Removed** - Tính năng đã bị loại bỏ
 - **Fixed** - Sửa lỗi
 - **Security** - Cải thiện bảo mật 
+
+
+### Error Need To Fix
+- **Reset** - Nếu mà có nhiều cổng USB được cắm vào con rasp thì không thể reset được chính xác phần energy, nhưng nếu tôi tháo hết các cổng kết nối thừa ra thì nó lại có thể reset được con pzem tôi mong muốn, cần fix lại trường hợp lỗi này.
