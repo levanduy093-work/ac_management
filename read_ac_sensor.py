@@ -1,4 +1,4 @@
-# Reading multiple PZEM-004t sensors (v3.0) concurrently using the custom pzem_python library.
+# Reading multiple PZEM-004T sensors concurrently using the new PZEM-004T library.
 # The script automatically detects PL2303 USB-to-Serial adapters and reads from them.
 
 import serial
@@ -11,13 +11,13 @@ import pandas as pd
 from datetime import datetime
 import csv
 
-# Import the new library
-from pzem import PZEM004Tv30
+# Import the new PZEM-004T library
+from pzem import PZEM004T
 
 def find_pzem_ports():
     """
     Scans for and returns a list of serial ports that appear to be connected to
-    PZEM-004t sensors via a USB-to-Serial adapter (like PL2303, CH340, etc.).
+    PZEM-004T sensors via a USB-to-Serial adapter (like PL2303, CH340, etc.).
     """
     pzem_ports = []
     ports = serial.tools.list_ports.comports()
@@ -28,7 +28,7 @@ def find_pzem_ports():
         hwid_lower = port.hwid.lower() if port.hwid else ""
 
         # Add more keywords if your adapter has a different description
-        keywords = ["pl2303", "usb-serial", "usb serial", "ch340"]
+        keywords = ["pl2303", "usb-serial", "usb serial", "ch340", "cp210", "ftdi"]
         
         if any(keyword in desc_lower for keyword in keywords) or \
            any(keyword in device_lower for keyword in keywords) or \
@@ -121,35 +121,36 @@ def save_to_csv(sensor_data):
 
 def read_pzem_data(port):
     """
-    Connects to a PZEM sensor on a given port using the PZEM004Tv30 library,
+    Connects to a PZEM sensor on a given port using the new PZEM004T library,
     reads its data, and returns it as a dictionary.
     Returns None if failed.
     """
     pzem = None
     try:
         # Instantiate the PZEM sensor from our new library
-        pzem = PZEM004Tv30(port=port, timeout=2.0)
+        pzem = PZEM004T(port=port, timeout=2.0)
 
-        # Read all values from the sensor at once
-        if pzem.update_values():
-            # Unpack data from the values dictionary
-            # Note: The library returns energy in kWh, so we convert to Wh for consistency
-            energy_wh = pzem.values['energy'] * 1000
+        # Read all measurements from the sensor at once using the new API
+        measurements = pzem.get_all_measurements()
+        
+        if measurements:
+            # Convert energy from kWh to Wh for consistency with existing logic
+            energy_wh = measurements['energy'] * 1000
 
             sensor_data = {
                 'port': port,
-                'voltage': pzem.values['voltage'],
-                'current': pzem.values['current'],
-                'power': pzem.values['power'],
+                'voltage': measurements['voltage'],
+                'current': measurements['current'],
+                'power': measurements['power'],
                 'energy': energy_wh,
-                'frequency': pzem.values['frequency'],
-                'power_factor': pzem.values['pf'],
-                'alarm': pzem.values['alarms'] != 0, # Convert alarm status to boolean
+                'frequency': measurements['frequency'],
+                'power_factor': measurements['power_factor'],
+                'alarm': measurements['alarm_status'],
                 'timestamp': datetime.now()
             }
             return sensor_data
         else:
-            print(f"Could not read from {port}: Failed to update values.")
+            print(f"Could not read from {port}: Failed to get measurements.")
             return None
 
     except Exception as e:
@@ -309,11 +310,13 @@ def manage_log_size(log_dir="data/csv_logs", max_size_gb=5):
             elif os.path.exists(f):
                  new_total_size += os.path.getsize(f)
 
-
         current_size = new_total_size
         print(f"New log directory size: {current_size / (1024**3):.2f} GB")
 
-if __name__ == "__main__":
+def main():
+    """
+    Main function to run the PZEM sensor monitoring
+    """
     try:
         while True:
             # Find all connected PZEM devices
@@ -351,3 +354,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
         time.sleep(1)  # Wait before continuing
+
+if __name__ == "__main__":
+    main()
