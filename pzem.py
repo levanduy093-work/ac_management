@@ -43,7 +43,7 @@ class PZEM004T:
     READ_INPUT_REGISTERS = 0x04
     WRITE_SINGLE_REGISTER = 0x06
     CALIBRATION = 0x41
-    ESET_ENERGY = 0x42
+    RESET_ENERGY = 0x42
     
     # Register addresses for measurements
     REG_VOLTAGE = 0x0000

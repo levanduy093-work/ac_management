@@ -64,17 +64,13 @@ def get_device_info(port, max_retries=2):
             measurements = pzem.get_all_measurements()
             address = pzem.get_address()
             
-            # Test reset support
-            reset_supported = pzem.test_reset_support()
-            
             if measurements:
                 return {
                     'address': address,
                     'energy': measurements['energy'],
                     'power': measurements['power'],
                     'voltage': measurements['voltage'],
-                    'current': measurements['current'],
-                    'reset_supported': reset_supported
+                    'current': measurements['current']
                 }
             else:
                 if attempt < max_retries:
@@ -122,12 +118,6 @@ def reset_pzem_energy(port, confirm=True, max_retries=3):
         print(f"  Công suất: {device_info['power']:.1f} W")
         print(f"  Điện áp: {device_info['voltage']:.1f} V")
         print(f"  Dòng điện: {device_info['current']:.3f} A")
-        print(f"  Hỗ trợ reset: {'✅ Có' if device_info['reset_supported'] else '❌ Không'}")
-        
-        # Kiểm tra hỗ trợ reset
-        if not device_info['reset_supported']:
-            print(f"⚠️  Thiết bị {port} không hỗ trợ lệnh reset energy")
-            return False
         
         if confirm:
             response = input(f"\nBạn có chắc muốn reset bộ đếm năng lượng trên {port}? (y/N): ")
@@ -240,40 +230,6 @@ def reset_all_devices(confirm_each=True, confirm_all=True):
             print(f"   Reset thành công: {success_count}")
             print(f"   Reset thất bại: {len(detected_ports) - success_count}")
 
-def test_reset_support():
-    """
-    Test hỗ trợ reset energy cho tất cả thiết bị
-    """
-    print("🔍 Đang test hỗ trợ reset energy...")
-    detected_ports = find_pzem_ports()
-    
-    if not detected_ports:
-        print("❌ Không phát hiện thấy thiết bị PZEM nào.")
-        return
-    
-    print(f"✅ Đã tìm thấy {len(detected_ports)} thiết bị: {detected_ports}")
-    
-    for i, port in enumerate(detected_ports, 1):
-        print(f"\n📊 [{i}/{len(detected_ports)}] Test thiết bị {port}...")
-        
-        try:
-            pzem = PZEM004T(port=port, timeout=3.0)
-            
-            # Test reset support
-            reset_supported = pzem.test_reset_support()
-            
-            if reset_supported:
-                print(f"✅ {port}: Hỗ trợ reset energy")
-            else:
-                print(f"❌ {port}: KHÔNG hỗ trợ reset energy")
-            
-            pzem.close()
-            
-        except Exception as e:
-            print(f"❌ {port}: Lỗi test - {e}")
-        
-        time.sleep(0.5)
-
 def main():
     """
     Hàm chính với menu tương tác
@@ -287,8 +243,7 @@ def main():
         print("2. Reset tất cả thiết bị (không xác nhận)")
         print("3. Reset từng thiết bị (xác nhận từng cái)")
         print("4. Quét lại thiết bị")
-        print("5. Test hỗ trợ reset")
-        print("6. Thoát")
+        print("5. Thoát")
         
         try:
             choice = input("\nChọn tùy chọn (1-5): ").strip()
@@ -306,12 +261,10 @@ def main():
                 else:
                     print("❌ Không tìm thấy thiết bị nào.")
             elif choice == '5':
-                test_reset_support()
-            elif choice == '6':
                 print("👋 Tạm biệt!")
                 break
             else:
-                print("❌ Tùy chọn không hợp lệ. Vui lòng chọn 1-6.")
+                print("❌ Tùy chọn không hợp lệ. Vui lòng chọn 1-5.")
                 
         except KeyboardInterrupt:
             print("\n👋 Tạm biệt!")
