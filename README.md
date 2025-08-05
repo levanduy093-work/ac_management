@@ -49,6 +49,12 @@ Script sẽ đọc và hiển thị các thông số điện quan trọng từ m
 - ✅ **Cache thông minh**: Tối ưu hiệu suất với cache dữ liệu
 - ✅ **API linh hoạt**: Đọc từng giá trị hoặc tất cả cùng lúc
 
+### Công cụ hỗ trợ
+- ✅ **Tool reset energy**: Menu tương tác, xác nhận an toàn, báo cáo chi tiết
+- ✅ **Hỗ trợ đa adapter**: PL2303, CH340, CP210, FTDI
+- ✅ **Giao diện thân thiện**: Emoji, màu sắc, thông báo rõ ràng
+- ✅ **Bảo mật cao**: Nhiều cấp xác nhận để tránh reset nhầm
+
 ### Ứng dụng giám sát đa cảm biến
 - ✅ **Tự động phát hiện cảm biến**: Quét và kết nối tự động với các thiết bị PZEM-004T
 - ✅ **Đa cảm biến**: Hỗ trợ đọc từ nhiều cảm biến cùng lúc
@@ -71,7 +77,7 @@ ac_management/
 ├── 📜 pzem.py                 # Thư viện PZEM-004T hoàn chỉnh
 ├── 📜 read_ac_sensor.py       # Script giám sát đa cảm biến
 ├── 📜 example_usage.py        # 6 ví dụ sử dụng thư viện
-├── 📜 reset_energy.py         # Tool reset energy counter
+├── 📜 reset_energy.py         # Tool reset energy counter (đã cập nhật)
 ├── 📋 requirements.txt        # Dependencies
 ├── 📖 README.md              # Tài liệu này
 ├── 📖 PZEM004T.md            # Hướng dẫn chi tiết thư viện
@@ -185,10 +191,17 @@ python3 read_ac_sensor.py
 - Hỗ trợ nhiều loại USB-to-Serial adapter
 - Cấu trúc code tối ưu và dễ bảo trì
 
-### 3. Reset energy counter
+### 3. Reset energy counter (Đã cập nhật)
 ```bash
 python3 reset_energy.py
 ```
+
+**Tính năng mới:**
+- Menu tương tác với 5 tùy chọn
+- Hiển thị thông tin thiết bị trước khi reset
+- Xác nhận an toàn nhiều cấp
+- Báo cáo kết quả chi tiết
+- Hỗ trợ nhiều loại USB-to-Serial adapter
 
 ## 📱 Giao diện và Output
 
@@ -221,6 +234,34 @@ Found 3 active sensor(s)
 === Summary ===
 Total Power: 949.1 W
 Total Energy: 7545 Wh
+```
+
+### Tool reset energy
+```
+🔌 PZEM-004T Energy Reset Tool
+========================================
+
+📋 Menu:
+1. Reset tất cả thiết bị (có xác nhận)
+2. Reset tất cả thiết bị (không xác nhận)
+3. Reset từng thiết bị (xác nhận từng cái)
+4. Quét lại thiết bị
+5. Thoát
+
+Thông tin thiết bị /dev/ttyUSB0:
+  Địa chỉ: 248
+  Năng lượng hiện tại: 1.547 kWh
+  Công suất: 185.2 W
+  Điện áp: 225.4 V
+  Dòng điện: 0.830 A
+
+✅ Đã reset thành công bộ đếm năng lượng trên /dev/ttyUSB0
+   Năng lượng sau reset: 0.000 kWh
+
+📋 Tóm tắt kết quả:
+   Tổng thiết bị: 3
+   Reset thành công: 3
+   Reset thất bại: 0
 ```
 
 ## 📊 Quản lý dữ liệu CSV
@@ -288,7 +329,7 @@ sudo usermod -a -G dialout $USER
 - `pzem.py`: Thư viện PZEM-004T hoàn chỉnh
 - `read_ac_sensor.py`: Ứng dụng giám sát đa cảm biến (đã cập nhật)
 - `example_usage.py`: Ví dụ sử dụng thư viện
-- `reset_energy.py`: Tool reset energy counter
+- `reset_energy.py`: Tool reset energy counter (đã cập nhật)
 
 ### Các thay đổi chính trong read_ac_sensor.py
 - **Import thư viện mới**: Sử dụng `PZEM004T` thay vì `PZEM004Tv30`
@@ -296,6 +337,13 @@ sudo usermod -a -G dialout $USER
 - **Hỗ trợ adapter mở rộng**: Thêm CP210, FTDI ngoài PL2303, CH340
 - **Cấu trúc code**: Tách logic chính vào hàm `main()` để dễ bảo trì
 - **Xử lý lỗi**: Cải thiện error handling và retry mechanism
+
+### Các thay đổi chính trong reset_energy.py
+- **Menu tương tác**: 5 tùy chọn với giao diện thân thiện
+- **Hiển thị thông tin**: Địa chỉ, năng lượng, công suất trước khi reset
+- **Xác nhận an toàn**: Nhiều cấp xác nhận để tránh reset nhầm
+- **Báo cáo chi tiết**: Tóm tắt kết quả reset với số liệu cụ thể
+- **Hỗ trợ adapter mở rộng**: PL2303, CH340, CP210, FTDI
 
 ### Đóng góp
 1. Fork repository này
@@ -312,6 +360,9 @@ sudo usermod -a -G dialout $USER
 - [ ] Advanced analytics và machine learning
 - [ ] Multi-site monitoring
 - [ ] Cloud integration (AWS IoT, Azure IoT)
+- [ ] GUI application với tkinter/PyQt
+- [ ] Automated testing suite
+- [ ] Docker containerization
 
 ## 📄 License
 
