@@ -187,7 +187,7 @@ class PZEM004T:
             # Write command: addr + func + reg_high + reg_low + val_high + val_low + crc
             packet = struct.pack('>BBHH', self.address, function_code, register, value)
         elif function_code == self.RESET_ENERGY:
-            # Reset command: addr + func + crc
+            # Reset command: addr + func + crc (4 bytes total)
             packet = struct.pack('>BB', self.address, function_code)
         elif function_code == self.CALIBRATION:
             # Calibration command: addr + func + password_high + password_low + crc
@@ -217,8 +217,12 @@ class PZEM004T:
             # Write response: addr + func + reg_high + reg_low + val_high + val_low + crc
             response = self.serial.read(8)
         elif function_code == self.RESET_ENERGY:
-            # Reset response: addr + func + crc
+            # Reset response: addr + func + crc (4 bytes total)
+            # According to documentation: slave address + 0x42 + CRC check high byte + CRC check low byte
             response = self.serial.read(4)
+            if len(response) < 4:
+                logging.error(f"Reset energy response too short: {len(response)} bytes")
+                return None
         elif function_code == self.CALIBRATION:
             # Calibration response: addr + func + password_high + password_low + crc
             response = self.serial.read(8)
@@ -417,13 +421,46 @@ class PZEM004T:
         Returns:
             bool: True on success
         """
-        response = self._send_command(self.RESET_ENERGY)
-        if response:
+        # Clear input buffer before sending command
+        if self.serial and self.serial.is_open:
+            self.serial.flushInput()
+        
+        # Build reset command manually for better control
+        packet = struct.pack('>BB', self.address, self.RESET_ENERGY)
+        packet += self._crc16(packet)
+        
+        logging.debug(f"Reset energy command: {packet.hex()}")
+        
+        # Send command
+        self.serial.write(packet)
+        
+        # Read response
+        response = self.serial.read(4)
+        logging.debug(f"Reset energy response: {response.hex() if response else 'None'}")
+        
+        if not response or len(response) < 4:
+            logging.error(f"Reset energy response invalid: {response}")
+            return False
+        
+        # Validate CRC
+        if not self._validate_crc(response):
+            logging.error("Invalid CRC in reset energy response")
+            return False
+        
+        # Check for error response (0xC2 instead of 0x42)
+        if len(response) >= 2 and response[1] == 0xC2:
+            error_code = response[2] if len(response) > 2 else 0
+            self._handle_error(error_code)
+            return False
+        
+        # Check for correct response (0x42)
+        if len(response) >= 2 and response[1] == 0x42:
             logging.info("Energy counter reset successfully")
             # Clear cached energy value
             self._measurements['energy'] = 0.0
             return True
         
+        logging.error(f"Unexpected reset energy response: {response.hex()}")
         return False
     
     def calibrate(self) -> bool:
