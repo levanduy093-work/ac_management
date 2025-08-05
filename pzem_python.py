@@ -3,8 +3,8 @@ import time
 import struct
 import logging
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# Configure logging to show only errors
+logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Constants from the C++ library
 _PZEM_DEFAULT_ADDR = 0xF8
