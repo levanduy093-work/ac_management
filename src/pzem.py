@@ -492,7 +492,7 @@ class PZEM004T:
     def reset_energy(self, verify_reset: bool = True) -> bool:
         """
         Reset energy counter to zero.
-        Based on the original C++ implementation from PZEM004Tv30.cpp
+        Based on the simple implementation from PZEM004Tv30.py
         
         Args:
             verify_reset: If True, verify the reset by reading energy value after reset
@@ -513,9 +513,9 @@ class PZEM004T:
             if self.serial and self.serial.is_open:
                 self.serial.flushInput()
             
-            # Build reset command exactly like C++ implementation
-            # [addr, 0x42, 0x00, 0x00] + CRC
-            packet = struct.pack('>BBHH', self.address, self.RESET_ENERGY, 0x0000, 0x0000)
+            # Build reset command - simple format like PZEM004Tv30.py
+            # [addr, 0x42] + CRC
+            packet = struct.pack('>BB', self.address, self.RESET_ENERGY)
             packet += self._crc16(packet)
             
             logging.debug(f"Reset energy command: {packet.hex()}")
@@ -523,35 +523,16 @@ class PZEM004T:
             # Send command
             self.serial.write(packet)
             
-            # Wait for device to process the command (increased delay)
-            time.sleep(0.2)
-            
-            # Read response - try to read 5 bytes like C++ implementation
-            response = self.serial.read(5)
-            
-            # Check response length like C++ implementation
-            # Success condition: length != 0 && length != 5
-            if len(response) == 0:
-                logging.warning("No response received from device")
-                # Assume success if no response (some devices don't respond)
-                reset_success = True
-            elif len(response) == 5:
-                logging.warning("Received 5 bytes response - may indicate error")
-                reset_success = False
-            else:
-                logging.info(f"Received {len(response)} bytes response - reset successful")
-                reset_success = True
-            
-            if not reset_success:
-                logging.error("Reset energy failed")
-                return False
+            # The device may not send a response to the reset command.
+            # A small delay to allow the command to be processed.
+            time.sleep(0.1)
             
             # Clear cached energy value
             self._measurements['energy'] = 0.0
             
             # Verify reset by reading energy value
             if verify_reset and energy_before is not None:
-                time.sleep(1.0)  # Wait longer for device to update
+                time.sleep(0.5)  # Wait for device to update
                 measurements = self.get_all_measurements()
                 if measurements:
                     energy_after = measurements['energy']
@@ -567,6 +548,7 @@ class PZEM004T:
                         logging.warning(f"Reset may have failed: Energy is {energy_after:.3f} kWh (was {energy_before:.3f} kWh)")
                         return False
             
+            # Assuming success as there's no direct confirmation
             return True
             
         except Exception as e:
