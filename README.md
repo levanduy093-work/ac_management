@@ -42,7 +42,8 @@ Script sẽ đọc và hiển thị các thông số điện quan trọng từ m
 
 ```
 ac_management/
-├── 📜 pzem.py                 # Script chính
+├── 📜 read_ac_sensor.py      # Script chính để chạy chương trình
+├── 📜 pzem.py                 # Thư viện giao tiếp với cảm biến PZEM
 ├── 📋 requirements.txt        # Dependencies
 ├── 📖 README.md              # Tài liệu này
 ├── 📝 DATA_LOGGING.md        # Hướng dẫn chi tiết về CSV logging
@@ -124,17 +125,17 @@ sudo chmod 666 /dev/ttyUSB*
 
 ### Chạy chương trình cơ bản
 ```bash
-python3 pzem.py
+python3 read_ac_sensor.py
 ```
 
 ### Tùy chọn chạy nền (background)
 ```bash
 # Sử dụng nohup
-nohup python3 pzem.py > pzem.log 2>&1 &
+nohup python3 read_ac_sensor.py > pzem.log 2>&1 &
 
 # Sử dụng screen
 screen -S pzem
-python3 pzem.py
+python3 read_ac_sensor.py
 # Ctrl+A, D để detach
 ```
 
