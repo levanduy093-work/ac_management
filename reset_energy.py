@@ -125,16 +125,16 @@ def reset_pzem_energy(port, confirm=True, max_retries=3):
                 print(f"Bỏ qua reset cho {port}")
                 return False
     
-    # Thử reset với retry mechanism mới (sử dụng retry built-in trong thư viện)
+    # Thử reset với approach đơn giản hơn
     try:
         pzem = PZEM004T(port=port, timeout=3.0)  # Tăng timeout
         
-        # Sử dụng retry mechanism built-in trong thư viện
-        if pzem.reset_energy(max_retries=max_retries):
+        # Sử dụng reset energy với verify
+        if pzem.reset_energy(verify_reset=True):
             print(f"✅ Đã reset thành công bộ đếm năng lượng trên {port}")
             
             # Đọc lại thông tin sau khi reset
-            time.sleep(2)  # Tăng delay để thiết bị ổn định
+            time.sleep(1)  # Giảm delay vì đã verify trong reset_energy
             new_measurements = pzem.get_all_measurements()
             if new_measurements:
                 print(f"   Năng lượng sau reset: {new_measurements['energy']:.3f} kWh")
