@@ -61,7 +61,7 @@ def get_device_info(port, max_retries=2):
     
     for attempt in range(1, max_retries + 1):
         try:
-            pzem = PZEM004T(port=port, timeout=3.0)
+            pzem = PZEM004T(port=port, timeout=5.0)  # Tăng timeout lên 5 giây
             
             # Đọc thông tin thiết bị
             measurements = pzem.get_all_measurements()
@@ -93,7 +93,7 @@ def get_device_info(port, max_retries=2):
         finally:
             if pzem:
                 pzem.close()
-                time.sleep(0.5)
+                time.sleep(1.0)  # Tăng delay lên 1 giây
     
     return None
 
@@ -128,16 +128,16 @@ def reset_pzem_energy(port, confirm=True, max_retries=3):
                 print(f"Bỏ qua reset cho {port}")
                 return False
     
-    # Thử reset với approach đơn giản hơn
+        # Thử reset với approach đơn giản hơn
     try:
-        pzem = PZEM004T(port=port, timeout=3.0)  # Tăng timeout
+        pzem = PZEM004T(port=port, timeout=5.0)  # Tăng timeout lên 5 giây
         
         # Sử dụng reset energy với verify
         if pzem.reset_energy(verify_reset=True):
             print(f"✅ Đã reset thành công bộ đếm năng lượng trên {port}")
             
             # Đọc lại thông tin sau khi reset
-            time.sleep(1)  # Giảm delay vì đã verify trong reset_energy
+            time.sleep(2)  # Tăng delay lên 2 giây
             new_measurements = pzem.get_all_measurements()
             if new_measurements:
                 print(f"   Năng lượng sau reset: {new_measurements['energy']:.3f} kWh")
@@ -153,7 +153,7 @@ def reset_pzem_energy(port, confirm=True, max_retries=3):
     finally:
         if pzem:
             pzem.close()
-            time.sleep(0.5)  # Delay giữa các lần thử
+            time.sleep(1.0)  # Tăng delay lên 1 giây
     
     return False
 
@@ -200,7 +200,7 @@ def reset_all_devices(confirm_each=True, confirm_all=True):
         else:
             failed_ports.append(port)
         
-        time.sleep(1)  # Tăng delay giữa các thiết bị
+        time.sleep(2)  # Tăng delay lên 2 giây giữa các thiết bị
     
     # Tóm tắt kết quả
     print(f"\n📋 Tóm tắt kết quả:")
