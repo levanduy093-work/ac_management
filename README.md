@@ -204,14 +204,6 @@ python tools/reset_energy.py
 make run-reset
 ```
 
-#### Ví dụ sử dụng thư viện
-```bash
-python examples/example_usage.py
-
-# Hoặc sử dụng Makefile
-make run-example
-```
-
 ### 4. Sử dụng thư viện trong code
 ```python
 from src.pzem import PZEM004T
