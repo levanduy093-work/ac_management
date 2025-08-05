@@ -447,7 +447,6 @@ class PZEM004T:
         value = struct.unpack('>H', response[3:5])[0]
         return value
     
-    def test_reset_support(self) -> bool:
         """
         Test if the device supports reset energy command.
         
@@ -488,8 +487,8 @@ class PZEM004T:
             
         except Exception as e:
             logging.debug(f"Error testing reset support: {e}")
-            return False
-    
+            return Fals
+         
     def reset_energy(self, verify_reset: bool = True) -> bool:
         """
         Reset energy counter to zero.
