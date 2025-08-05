@@ -13,16 +13,20 @@ Tất cả các thay đổi quan trọng trong dự án này sẽ được ghi l
 - **Cache thông minh** để tối ưu hiệu suất
 - **Tương thích ngược** với tên class cũ `PZEM004Tv30`
 - **Tính năng verify reset** để kiểm tra reset thật
-- **Cấu trúc dự án chuyên nghiệp** với thư mục src/, tools/, examples/, docs/
-- **Setup script** và Makefile để quản lý dự án
-- **Quick start script** để demo nhanh
+- **Cấu trúc dự án chuyên nghiệp** với thư mục src/, tools/, docs/
+- **Makefile** để quản lý dự án
 - **Documentation chi tiết** trong docs/
+- **Thông số kỹ thuật chính xác** theo tài liệu PZEM-004T datasheet
+- **Quy tắc hiển thị** tuân thủ datasheet cho công suất và năng lượng
+- **Phương thức format_measurements()** để format dữ liệu theo datasheet
 
 #### 🔄 Changed
 - **Cải thiện reset energy** với approach đơn giản hơn, tương thích với nhiều thiết bị
 - **Cập nhật read_ac_sensor.py** sử dụng thư viện mới với hiệu suất tốt hơn
 - **Cập nhật reset_energy.py** với menu tương tác và xác nhận an toàn
 - **Tổ chức lại cấu trúc file** theo chuẩn Python package
+- **Cập nhật thông số kỹ thuật** theo datasheet chính thức PZEM-004T
+- **Cải thiện hiển thị dữ liệu** theo quy tắc datasheet
 
 #### 🐛 Fixed
 - **Lỗi reset energy** với thiết bị không gửi response
@@ -30,9 +34,20 @@ Tất cả các thay đổi quan trọng trong dự án này sẽ được ghi l
 - **Import paths** sau khi tổ chức lại cấu trúc
 
 #### 📚 Documentation
-- **PZEM004T.md** - Hướng dẫn chi tiết thư viện
-- **README.md** - Cập nhật với cấu trúc mới
-- **Example usage** - 6 ví dụ sử dụng thực tế
+- **docs/PZEM004T.md** - Hướng dẫn chi tiết thư viện
+- **README.md** - Cập nhật với cấu trúc mới và thông số kỹ thuật chính xác
+- **docs/DATA_LOGGING.md** - Hướng dẫn CSV logging
+- **PROJECT_STRUCTURE.md** - Tài liệu cấu trúc dự án chi tiết
+
+#### 🔧 Technical Specifications Update
+- **Voltage**: 80-260V, resolution 0.1V, accuracy ±0.5%
+- **Current**: 0-10A (10A model) / 0-100A (100A model), resolution 0.001A, accuracy ±0.5%
+- **Power**: 0-2.3kW (10A) / 0-23kW (100A), resolution 0.1W, accuracy ±0.5%
+- **Energy**: 0-9999.99kWh, resolution 1Wh, accuracy ±0.5%
+- **Frequency**: 45-65Hz, resolution 0.1Hz, accuracy ±0.5%
+- **Power Factor**: 0.00-1.00, resolution 0.01, accuracy ±1%
+- **Starting thresholds**: Current 0.01A/0.02A, Power 0.4W
+- **Display rules**: Power <1000W shows decimal, ≥1000W shows integer; Energy <10kWh shows Wh, ≥10kWh shows kWh
 
 ## [1.0.0] - 2025-08-04
 

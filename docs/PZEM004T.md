@@ -203,8 +203,20 @@ Thực hiện calibration thiết bị (chỉ dành cho nhà máy).
 
 ### Phương thức tiện ích
 
+#### `format_measurements() -> Dict[str, str]`
+Format tất cả giá trị đo theo quy tắc hiển thị của datasheet.
+
+**Trả về:** Dictionary chứa các chuỗi đã format
+
+**Ví dụ:**
+```python
+formatted = pzem.format_measurements()
+print(formatted['power'])    # "999.9W" hoặc "1000W"
+print(formatted['energy'])   # "9999Wh" hoặc "10.00kWh"
+```
+
 #### `print_measurements()`
-In tất cả giá trị đo theo định dạng đẹp.
+In tất cả giá trị đo theo định dạng đẹp, tuân thủ quy tắc datasheet.
 
 #### `close()`
 Đóng kết nối serial.
@@ -222,6 +234,36 @@ try:
     
     while True:
         pzem.print_measurements()
+        time.sleep(1)
+        
+except KeyboardInterrupt:
+    print("\nDừng chương trình...")
+    pzem.close()
+```
+
+### Ví dụ 1.1: Sử dụng format_measurements() theo datasheet
+
+```python
+from pzem import PZEM004T
+import time
+
+try:
+    pzem = PZEM004T(port='/dev/ttyUSB0')
+    
+    while True:
+        # Lấy dữ liệu đã format theo datasheet
+        formatted = pzem.format_measurements()
+        
+        print("=== PZEM-004T (Datasheet Format) ===")
+        print(f"Voltage:      {formatted['voltage']}")
+        print(f"Current:      {formatted['current']}")
+        print(f"Power:        {formatted['power']}")
+        print(f"Energy:       {formatted['energy']}")
+        print(f"Frequency:    {formatted['frequency']}")
+        print(f"Power Factor: {formatted['power_factor']}")
+        print(f"Alarm:        {formatted['alarm_status']}")
+        print("=" * 35)
+        
         time.sleep(1)
         
 except KeyboardInterrupt:
@@ -356,16 +398,26 @@ pzem.close()
 
 ## Thông số kỹ thuật
 
-### Đặc điểm đo
+### Đặc điểm đo (theo tài liệu kỹ thuật PZEM-004T)
 
-| Thông số | Dải đo | Độ phân giải | Độ chính xác |
-|----------|--------|--------------|--------------|
-| Điện áp | 80-260V | 0.1V | ±0.5% |
-| Dòng điện | 0-10A (10A) / 0-100A (100A) | 0.001A | ±0.5% |
-| Công suất | 0-2.3kW (10A) / 0-23kW (100A) | 0.1W | ±0.5% |
-| Năng lượng | 0-9999.99kWh | 1Wh | ±0.5% |
-| Tần số | 45-65Hz | 0.1Hz | ±0.5% |
-| Hệ số công suất | 0.00-1.00 | 0.01 | ±1% |
+| Thông số | Dải đo | Độ phân giải | Độ chính xác | Ngưỡng bắt đầu |
+|----------|--------|--------------|--------------|----------------|
+| Điện áp | 80-260V | 0.1V | ±0.5% | - |
+| Dòng điện | 0-10A (10A) / 0-100A (100A) | 0.001A | ±0.5% | 0.01A (10A) / 0.02A (100A) |
+| Công suất | 0-2.3kW (10A) / 0-23kW (100A) | 0.1W | ±0.5% | 0.4W |
+| Năng lượng | 0-9999.99kWh | 1Wh | ±0.5% | - |
+| Tần số | 45-65Hz | 0.1Hz | ±0.5% | - |
+| Hệ số công suất | 0.00-1.00 | 0.01 | ±1% | - |
+
+### Quy tắc hiển thị (theo datasheet)
+
+#### Hiển thị công suất:
+- **<1000W**: Hiển thị 1 chữ số thập phân (VD: 999.9W)
+- **≥1000W**: Hiển thị số nguyên (VD: 1000W)
+
+#### Hiển thị năng lượng:
+- **<10kWh**: Đơn vị Wh (1kWh=1000Wh), VD: 9999Wh
+- **≥10kWh**: Đơn vị kWh, VD: 9999.99kWh
 
 ### Giao thức giao tiếp
 

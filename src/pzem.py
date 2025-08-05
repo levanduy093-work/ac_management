@@ -27,6 +27,16 @@ class PZEM004T:
     Supported models:
     - PZEM-004T-10A: 0-10A range (built-in shunt)
     - PZEM-004T-100A: 0-100A range (external CT)
+    
+    Technical Specifications (from datasheet):
+    - Voltage: 80-260V, resolution 0.1V, accuracy ±0.5%
+    - Current: 0-10A (10A model) / 0-100A (100A model), resolution 0.001A, accuracy ±0.5%
+    - Power: 0-2.3kW (10A) / 0-23kW (100A), resolution 0.1W, accuracy ±0.5%
+    - Energy: 0-9999.99kWh, resolution 1Wh, accuracy ±0.5%
+    - Frequency: 45-65Hz, resolution 0.1Hz, accuracy ±0.5%
+    - Power Factor: 0.00-1.00, resolution 0.01, accuracy ±1%
+    - Starting current: 0.01A (10A model) / 0.02A (100A model)
+    - Starting power: 0.4W
     """
     
     # Communication constants
@@ -70,13 +80,35 @@ class PZEM004T:
     ERROR_ILLEGAL_DATA = 0x03
     ERROR_SLAVE_ERROR = 0x04
     
-    # Resolution factors
+    # Resolution factors (from datasheet)
     VOLTAGE_RESOLUTION = 0.1      # 1 LSB = 0.1V
     CURRENT_RESOLUTION = 0.001    # 1 LSB = 0.001A
     POWER_RESOLUTION = 0.1        # 1 LSB = 0.1W
     ENERGY_RESOLUTION = 1.0       # 1 LSB = 1Wh
     FREQUENCY_RESOLUTION = 0.1    # 1 LSB = 0.1Hz
     PF_RESOLUTION = 0.01          # 1 LSB = 0.01
+    
+    # Measurement ranges (from datasheet)
+    VOLTAGE_MIN = 80.0            # Minimum voltage (V)
+    VOLTAGE_MAX = 260.0           # Maximum voltage (V)
+    CURRENT_MIN_10A = 0.0         # Minimum current for 10A model (A)
+    CURRENT_MAX_10A = 10.0        # Maximum current for 10A model (A)
+    CURRENT_MIN_100A = 0.0        # Minimum current for 100A model (A)
+    CURRENT_MAX_100A = 100.0      # Maximum current for 100A model (A)
+    POWER_MIN = 0.0               # Minimum power (W)
+    POWER_MAX_10A = 2300.0        # Maximum power for 10A model (W)
+    POWER_MAX_100A = 23000.0      # Maximum power for 100A model (W)
+    ENERGY_MIN = 0.0              # Minimum energy (kWh)
+    ENERGY_MAX = 9999.99          # Maximum energy (kWh)
+    FREQUENCY_MIN = 45.0          # Minimum frequency (Hz)
+    FREQUENCY_MAX = 65.0          # Maximum frequency (Hz)
+    PF_MIN = 0.00                 # Minimum power factor
+    PF_MAX = 1.00                 # Maximum power factor
+    
+    # Starting measurement thresholds (from datasheet)
+    STARTING_CURRENT_10A = 0.01   # Starting current for 10A model (A)
+    STARTING_CURRENT_100A = 0.02  # Starting current for 100A model (A)
+    STARTING_POWER = 0.4          # Starting power (W)
     
     def __init__(self, port: str, address: int = DEFAULT_ADDRESS, timeout: float = 1.0):
         """
@@ -583,15 +615,62 @@ class PZEM004T:
         """
         return self.read_measurements()
     
-    def print_measurements(self):
-        """Print all current measurements in a formatted way."""
+    def format_measurements(self) -> Dict[str, str]:
+        """
+        Format measurements according to datasheet display rules.
+        
+        Returns:
+            dict: Formatted measurement strings
+        """
         measurements = self.read_measurements()
+        
+        # Format power according to datasheet rules
+        power = measurements['power']
+        if power < 1000:
+            power_str = f"{power:.1f}W"
+        else:
+            power_str = f"{power:.0f}W"
+        
+        # Format energy according to datasheet rules
+        energy = measurements['energy']
+        if energy < 10:
+            energy_str = f"{energy * 1000:.0f}Wh"  # Convert kWh to Wh
+        else:
+            energy_str = f"{energy:.2f}kWh"
+        
+        return {
+            'voltage': f"{measurements['voltage']:.1f}V",
+            'current': f"{measurements['current']:.3f}A",
+            'power': power_str,
+            'energy': energy_str,
+            'frequency': f"{measurements['frequency']:.1f}Hz",
+            'power_factor': f"{measurements['power_factor']:.2f}",
+            'alarm_status': 'ON' if measurements['alarm_status'] else 'OFF'
+        }
+    
+    def print_measurements(self):
+        """Print all current measurements in a formatted way according to datasheet display rules."""
+        measurements = self.read_measurements()
+        
+        # Format power according to datasheet rules
+        power = measurements['power']
+        if power < 1000:
+            power_str = f"{power:.1f}"
+        else:
+            power_str = f"{power:.0f}"
+        
+        # Format energy according to datasheet rules
+        energy = measurements['energy']
+        if energy < 10:
+            energy_str = f"{energy * 1000:.0f} Wh"  # Convert kWh to Wh
+        else:
+            energy_str = f"{energy:.2f} kWh"
         
         print("=== PZEM-004T Measurements ===")
         print(f"Voltage:      {measurements['voltage']:6.1f} V")
         print(f"Current:      {measurements['current']:6.3f} A")
-        print(f"Power:        {measurements['power']:6.1f} W")
-        print(f"Energy:       {measurements['energy']:6.3f} kWh")
+        print(f"Power:        {power_str:>6} W")
+        print(f"Energy:       {energy_str:>10}")
         print(f"Frequency:    {measurements['frequency']:6.1f} Hz")
         print(f"Power Factor: {measurements['power_factor']:6.2f}")
         print(f"Alarm Status: {'ON' if measurements['alarm_status'] else 'OFF'}")

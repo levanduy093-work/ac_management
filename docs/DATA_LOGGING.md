@@ -3,14 +3,24 @@
 ## Cấu trúc thư mục
 ```
 ac_management/
-├── pzem.py              # Main script
-├── requirements.txt     # Dependencies
-├── data/               # Data storage
-│   └── csv_logs/       # CSV log files
-│       ├── pzem_dev_ttyUSB0.csv
-│       ├── pzem_dev_ttyUSB1.csv
-│       └── pzem_dev_ttyUSB2.csv
-└── DATA_LOGGING.md     # This file
+├── src/                       # Thư viện chính
+│   ├── __init__.py
+│   └── pzem.py               # Thư viện PZEM-004T
+├── tools/                     # Công cụ ứng dụng
+│   ├── __init__.py
+│   ├── read_ac_sensor.py     # Script giám sát đa cảm biến
+│   └── reset_energy.py       # Tool reset energy
+├── docs/                      # Tài liệu
+│   ├── PZEM004T.md           # Hướng dẫn thư viện
+│   └── DATA_LOGGING.md       # File này
+├── data/                      # Dữ liệu
+│   └── csv_logs/             # File CSV logs
+│       ├── pzem__dev_ttyUSB0.csv
+│       ├── pzem__dev_ttyUSB1.csv
+│       └── pzem__dev_ttyUSB2.csv
+├── requirements.txt           # Dependencies
+├── Makefile                   # Quản lý dự án
+└── README.md                  # Tài liệu chính
 ```
 
 ## Tính năng ghi dữ liệu CSV
@@ -51,16 +61,16 @@ pip install -r requirements.txt
 
 ### 2. Chạy chương trình
 ```bash
-python pzem.py
+python tools/read_ac_sensor.py
 ```
 
 ### 3. Xem dữ liệu CSV
 ```bash
 # Xem file CSV
-cat data/csv_logs/pzem_dev_ttyUSB0.csv
+cat data/csv_logs/pzem__dev_ttyUSB0.csv
 
 # Hoặc sử dụng pandas để phân tích
-python -c "import pandas as pd; df = pd.read_csv('data/csv_logs/pzem_dev_ttyUSB0.csv'); print(df.tail())"
+python -c "import pandas as pd; df = pd.read_csv('data/csv_logs/pzem__dev_ttyUSB0.csv'); print(df.tail())"
 ```
 
 ## Quản lý dữ liệu
@@ -77,7 +87,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Đọc dữ liệu
-df = pd.read_csv('data/csv_logs/pzem_dev_ttyUSB0.csv')
+df = pd.read_csv('data/csv_logs/pzem__dev_ttyUSB0.csv')
 df['datetime'] = pd.to_datetime(df['datetime'])
 
 # Vẽ biểu đồ công suất theo thời gian

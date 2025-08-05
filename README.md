@@ -21,23 +21,27 @@ Một hệ thống Python chuyên nghiệp để giám sát và ghi dữ liệu 
 
 ### 📚 Tài liệu chi tiết
 
-- **[PZEM004T.md](PZEM004T.md)**: Hướng dẫn chi tiết thư viện PZEM-004T
-- **[example_usage.py](example_usage.py)**: 6 ví dụ sử dụng thực tế
-- **[pzem.py](pzem.py)**: Thư viện chính hoàn chỉnh
+- **[docs/PZEM004T.md](docs/PZEM004T.md)**: Hướng dẫn chi tiết thư viện PZEM-004T
+- **[src/pzem.py](src/pzem.py)**: Thư viện chính hoàn chỉnh
 
 ## 📊 Thông số giám sát
 
-Script sẽ đọc và hiển thị các thông số điện quan trọng từ mỗi cảm biến:
+Script sẽ đọc và hiển thị các thông số điện quan trọng từ mỗi cảm biến theo tài liệu kỹ thuật PZEM-004T:
 
-| Thông số | Đơn vị | Dải đo | Độ chính xác |
-|----------|---------|--------|--------------|
-| **Voltage** | V | 80-260V | ±0.5% |
-| **Current** | A | 0-10A (10A) / 0-100A (100A) | ±0.5% |
-| **Power** | W | 0-2.3kW (10A) / 0-23kW (100A) | ±0.5% |
-| **Energy** | kWh | 0-9999.99kWh | ±0.5% |
-| **Frequency** | Hz | 45-65Hz | ±0.5% |
-| **Power Factor** | - | 0.00-1.00 | ±1% |
-| **Alarm** | ON/OFF | Power threshold | - |
+| Thông số | Đơn vị | Dải đo | Độ phân giải | Độ chính xác | Ngưỡng bắt đầu |
+|----------|---------|--------|--------------|--------------|----------------|
+| **Voltage** | V | 80-260V | 0.1V | ±0.5% | - |
+| **Current** | A | 0-10A (10A) / 0-100A (100A) | 0.001A | ±0.5% | 0.01A (10A) / 0.02A (100A) |
+| **Power** | W | 0-2.3kW (10A) / 0-23kW (100A) | 0.1W | ±0.5% | 0.4W |
+| **Energy** | kWh | 0-9999.99kWh | 1Wh | ±0.5% | - |
+| **Frequency** | Hz | 45-65Hz | 0.1Hz | ±0.5% | - |
+| **Power Factor** | - | 0.00-1.00 | 0.01 | ±1% | - |
+| **Alarm** | ON/OFF | Power threshold | - | - | - |
+
+**Lưu ý quan trọng:**
+- **Hiển thị công suất**: <1000W hiển thị 1 chữ số thập phân (VD: 999.9W), ≥1000W hiển thị số nguyên (VD: 1000W)
+- **Hiển thị năng lượng**: <10kWh đơn vị Wh (VD: 9999Wh), ≥10kWh đơn vị kWh (VD: 9999.99kWh)
+- **Độ chính xác**: Tất cả thông số đều có độ chính xác cao theo tiêu chuẩn công nghiệp
 
 ## 🎯 Tính năng chính
 
@@ -81,9 +85,6 @@ ac_management/
 │   ├── __init__.py
 │   ├── read_ac_sensor.py     # Script giám sát đa cảm biến
 │   └── reset_energy.py       # Tool reset energy counter
-├── examples/                  # 📖 Ví dụ sử dụng
-│   ├── __init__.py
-│   └── example_usage.py      # 6 ví dụ sử dụng thư viện
 ├── docs/                      # 📋 Tài liệu
 │   ├── PZEM004T.md           # Hướng dẫn chi tiết thư viện
 │   └── DATA_LOGGING.md       # Hướng dẫn CSV logging
@@ -92,11 +93,11 @@ ac_management/
 │       ├── pzem__dev_ttyUSB0.csv
 │       ├── pzem__dev_ttyUSB1.csv
 │       └── pzem__dev_ttyUSB2.csv
-├── setup.py                   # ⚙️ Cài đặt thư viện
 ├── Makefile                   # 🛠️ Quản lý dự án
-├── quick_start.py            # 🚀 Demo nhanh
 ├── requirements.txt           # 📦 Dependencies
-└── README.md                 # 📖 Tài liệu này
+├── CHANGELOG.md              # 📝 Lịch sử thay đổi
+├── LICENSE                   # 📄 Giấy phép
+└── README.md                 # �� Tài liệu này
 ```
 
 ## 🔧 Yêu cầu phần cứng
@@ -170,8 +171,8 @@ sudo chmod 666 /dev/ttyUSB*
 git clone <repository-url>
 cd ac_management
 
-# Cài đặt thư viện
-pip install -e .
+# Cài đặt dependencies
+pip install -r requirements.txt
 
 # Hoặc sử dụng Makefile
 make install
@@ -180,10 +181,10 @@ make install
 ### 2. Demo nhanh
 ```bash
 # Chạy demo để kiểm tra thiết bị
-python quick_start.py
+python tools/read_ac_sensor.py
 
 # Hoặc sử dụng Makefile
-make quick-start
+make run-monitor
 ```
 
 ### 3. Sử dụng các công cụ
@@ -333,17 +334,16 @@ sudo usermod -a -G dialout $USER
 
 ## 📚 Tài liệu tham khảo
 
-- **[PZEM004T.md](PZEM004T.md)**: Hướng dẫn chi tiết thư viện
-- **[example_usage.py](example_usage.py)**: 6 ví dụ sử dụng thực tế
-- **[DATA_LOGGING.md](DATA_LOGGING.md)**: Hướng dẫn CSV logging
+- **[docs/PZEM004T.md](docs/PZEM004T.md)**: Hướng dẫn chi tiết thư viện
+- **[docs/DATA_LOGGING.md](docs/DATA_LOGGING.md)**: Hướng dẫn CSV logging
+- **[PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)**: Cấu trúc dự án chi tiết
 
 ## 🤝 Đóng góp và phát triển
 
 ### Cấu trúc code
-- `pzem.py`: Thư viện PZEM-004T hoàn chỉnh
-- `read_ac_sensor.py`: Ứng dụng giám sát đa cảm biến (đã cập nhật)
-- `example_usage.py`: Ví dụ sử dụng thư viện
-- `reset_energy.py`: Tool reset energy counter (đã cập nhật)
+- `src/pzem.py`: Thư viện PZEM-004T hoàn chỉnh
+- `tools/read_ac_sensor.py`: Ứng dụng giám sát đa cảm biến (đã cập nhật)
+- `tools/reset_energy.py`: Tool reset energy counter (đã cập nhật)
 
 ### Các thay đổi chính trong read_ac_sensor.py
 - **Import thư viện mới**: Sử dụng `PZEM004T` thay vì `PZEM004Tv30`
@@ -377,6 +377,8 @@ sudo usermod -a -G dialout $USER
 - [ ] GUI application với tkinter/PyQt
 - [ ] Automated testing suite
 - [ ] Docker containerization
+- [ ] Examples directory với các ví dụ sử dụng
+- [ ] Setup script cho cài đặt thư viện
 
 ## 📄 License
 

@@ -1,6 +1,6 @@
 # Makefile for PZEM-004T Power Monitoring Project
 
-.PHONY: help install install-dev test clean lint format docs run-monitor run-reset run-example
+.PHONY: help install install-dev test clean lint format docs run-monitor run-reset
 
 # Default target
 help:
@@ -8,7 +8,7 @@ help:
 	@echo "=================================="
 	@echo ""
 	@echo "Available commands:"
-	@echo "  install      - Install the library and dependencies"
+	@echo "  install      - Install dependencies"
 	@echo "  install-dev  - Install with development dependencies"
 	@echo "  test         - Run tests"
 	@echo "  clean        - Clean build artifacts"
@@ -17,19 +17,19 @@ help:
 	@echo "  docs         - Generate documentation"
 	@echo "  run-monitor  - Run the multi-sensor monitor"
 	@echo "  run-reset    - Run the energy reset tool"
-	@echo "  run-example  - Run the example usage script"
 
-# Install the library
+# Install dependencies
 install:
-	pip install -e .
+	pip install -r requirements.txt
 
 # Install with development dependencies
 install-dev:
-	pip install -e .[dev]
+	pip install -r requirements.txt
+	pip install flake8 pylint black pytest
 
 # Run tests
 test:
-	python -m pytest tests/ -v
+	@echo "No tests configured yet. Use 'make run-monitor' to test the system."
 
 # Clean build artifacts
 clean:
@@ -41,18 +41,33 @@ clean:
 
 # Run linting
 lint:
-	flake8 src/ tools/ examples/
-	pylint src/ tools/ examples/
+	@echo "Linting source code..."
+	@if command -v flake8 >/dev/null 2>&1; then \
+		flake8 src/ tools/; \
+	else \
+		echo "flake8 not installed. Run 'make install-dev' first."; \
+	fi
+	@if command -v pylint >/dev/null 2>&1; then \
+		pylint src/ tools/; \
+	else \
+		echo "pylint not installed. Run 'make install-dev' first."; \
+	fi
 
 # Format code
 format:
-	black src/ tools/ examples/
+	@echo "Formatting code..."
+	@if command -v black >/dev/null 2>&1; then \
+		black src/ tools/; \
+	else \
+		echo "black not installed. Run 'make install-dev' first."; \
+	fi
 
 # Generate documentation
 docs:
 	@echo "Documentation is in docs/ directory"
-	@echo "- PZEM004T.md: Library documentation"
-	@echo "- DATA_LOGGING.md: Data logging guide"
+	@echo "- docs/PZEM004T.md: Library documentation"
+	@echo "- docs/DATA_LOGGING.md: Data logging guide"
+	@echo "- README.md: Main documentation"
 
 # Run the multi-sensor monitor
 run-monitor:
@@ -62,13 +77,8 @@ run-monitor:
 run-reset:
 	python tools/reset_energy.py
 
-# Run the example usage script
-run-example:
-	python examples/example_usage.py
-
 # Quick start
 quick-start: install
 	@echo "Installation complete!"
-	@echo "Run 'make run-example' to see examples"
 	@echo "Run 'make run-monitor' to start monitoring"
 	@echo "Run 'make run-reset' to reset energy counters" 
