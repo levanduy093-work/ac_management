@@ -10,34 +10,37 @@ Tất cả các thay đổi quan trọng trong dự án này sẽ được ghi l
 - **Thư viện PZEM-004T hoàn chỉnh** với triển khai đầy đủ Modbus-RTU protocol
 - **API đầy đủ** hỗ trợ tất cả function codes và register mapping
 - **Xử lý lỗi toàn diện** với CRC validation, error handling, retry mechanism
-- **Cache thông minh** để tối ưu hiệu suất
+- **Cache thông minh** để tối ưu hiệu suất (0.1s interval)
 - **Tương thích ngược** với tên class cũ `PZEM004Tv30`
 - **Tính năng verify reset** để kiểm tra reset thật
 - **Cấu trúc dự án chuyên nghiệp** với thư mục src/, tools/, docs/
-- **Makefile** để quản lý dự án
-- **Documentation chi tiết** trong docs/
+- **Makefile** để quản lý dự án (84 dòng)
+- **Documentation chi tiết** trong docs/ (572 + 114 dòng)
 - **Thông số kỹ thuật chính xác** theo tài liệu PZEM-004T datasheet
 - **Quy tắc hiển thị** tuân thủ datasheet cho công suất và năng lượng
 - **Phương thức format_measurements()** để format dữ liệu theo datasheet
+- **Quản lý file size** tự động dọn dẹp file CSV khi quá lớn
 
 #### 🔄 Changed
 - **Cải thiện reset energy** với approach đơn giản hơn, tương thích với nhiều thiết bị
-- **Cập nhật read_ac_sensor.py** sử dụng thư viện mới với hiệu suất tốt hơn
-- **Cập nhật reset_energy.py** với menu tương tác và xác nhận an toàn
+- **Cập nhật read_ac_sensor.py** sử dụng thư viện mới với hiệu suất tốt hơn (362 dòng)
+- **Cập nhật reset_energy.py** với giao diện đơn giản và xác nhận an toàn (82 dòng)
 - **Tổ chức lại cấu trúc file** theo chuẩn Python package
 - **Cập nhật thông số kỹ thuật** theo datasheet chính thức PZEM-004T
 - **Cải thiện hiển thị dữ liệu** theo quy tắc datasheet
+- **Hỗ trợ adapter mở rộng** thêm CP210, FTDI ngoài PL2303, CH340
 
 #### 🐛 Fixed
 - **Lỗi reset energy** với thiết bị không gửi response
 - **Timing issues** trong serial communication
 - **Import paths** sau khi tổ chức lại cấu trúc
+- **Error handling** trong multi-sensor monitoring
 
 #### 📚 Documentation
-- **docs/PZEM004T.md** - Hướng dẫn chi tiết thư viện
-- **README.md** - Cập nhật với cấu trúc mới và thông số kỹ thuật chính xác
-- **docs/DATA_LOGGING.md** - Hướng dẫn CSV logging
-- **PROJECT_STRUCTURE.md** - Tài liệu cấu trúc dự án chi tiết
+- **docs/PZEM004T.md** - Hướng dẫn chi tiết thư viện (572 dòng)
+- **README.md** - Cập nhật với cấu trúc mới và thông số kỹ thuật chính xác (407 dòng)
+- **docs/DATA_LOGGING.md** - Hướng dẫn CSV logging (114 dòng)
+- **PROJECT_STRUCTURE.md** - Tài liệu cấu trúc dự án chi tiết (227 dòng)
 
 #### 🔧 Technical Specifications Update
 - **Voltage**: 80-260V, resolution 0.1V, accuracy ±0.5%
@@ -48,6 +51,12 @@ Tất cả các thay đổi quan trọng trong dự án này sẽ được ghi l
 - **Power Factor**: 0.00-1.00, resolution 0.01, accuracy ±1%
 - **Starting thresholds**: Current 0.01A/0.02A, Power 0.4W
 - **Display rules**: Power <1000W shows decimal, ≥1000W shows integer; Energy <10kWh shows Wh, ≥10kWh shows kWh
+
+#### 📊 Data Management
+- **CSV logging system** với cấu trúc chuẩn và timestamp chính xác
+- **File size management** tự động dọn dẹp khi vượt quá kích thước
+- **Multi-sensor support** với threading và error handling
+- **Real-time monitoring** với cache optimization
 
 ## [1.0.0] - 2025-08-04
 

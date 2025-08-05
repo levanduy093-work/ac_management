@@ -9,7 +9,7 @@ Một hệ thống Python chuyên nghiệp để giám sát và ghi dữ liệu 
 - **Thư viện hoàn chỉnh**: Triển khai đầy đủ giao thức Modbus-RTU theo tài liệu kỹ thuật
 - **API đầy đủ**: Hỗ trợ tất cả function codes và register mapping
 - **Xử lý lỗi toàn diện**: CRC validation, error handling, retry mechanism
-- **Cache thông minh**: Tối ưu hiệu suất với cache dữ liệu
+- **Cache thông minh**: Tối ưu hiệu suất với cache dữ liệu (0.1s interval)
 - **Tương thích ngược**: Hỗ trợ cả tên class cũ và mới
 
 ### 🔄 Cập nhật ứng dụng giám sát
@@ -50,54 +50,57 @@ Script sẽ đọc và hiển thị các thông số điện quan trọng từ m
 - ✅ **Cấu hình thiết bị**: Set/Get power alarm threshold, change device address
 - ✅ **Điều khiển**: Reset energy counter, calibration (factory use)
 - ✅ **Xử lý lỗi**: CRC validation, Modbus error handling, retry mechanism
-- ✅ **Cache thông minh**: Tối ưu hiệu suất với cache dữ liệu
+- ✅ **Cache thông minh**: Tối ưu hiệu suất với cache dữ liệu (0.1s interval)
 - ✅ **API linh hoạt**: Đọc từng giá trị hoặc tất cả cùng lúc
+- ✅ **Tương thích ngược**: Hỗ trợ cả tên class cũ và mới
 
 ### Công cụ hỗ trợ
-- ✅ **Tool reset energy**: Menu tương tác, xác nhận an toàn, báo cáo chi tiết
+- ✅ **Tool reset energy**: Tự động phát hiện, reset với báo cáo chi tiết
 - ✅ **Hỗ trợ đa adapter**: PL2303, CH340, CP210, FTDI
-- ✅ **Giao diện thân thiện**: Emoji, màu sắc, thông báo rõ ràng
-- ✅ **Bảo mật cao**: Nhiều cấp xác nhận để tránh reset nhầm
+- ✅ **Error handling**: Timeout và retry mechanism
+- ✅ **Bảo mật**: Xác nhận trước khi reset
 
 ### Ứng dụng giám sát đa cảm biến
 - ✅ **Tự động phát hiện cảm biến**: Quét và kết nối tự động với các thiết bị PZEM-004T
-- ✅ **Đa cảm biến**: Hỗ trợ đọc từ nhiều cảm biến cùng lúc
+- ✅ **Đa cảm biến**: Hỗ trợ đọc từ nhiều cảm biến cùng lúc với threading
 - ✅ **Hiển thị dạng bảng**: Dữ liệu từ tất cả cảm biến hiển thị trong bảng thống nhất
 - ✅ **Thông tin tổng hợp**: Tính tổng công suất và năng lượng của tất cả cảm biến
 - ✅ **Cơ chế retry**: Tự động thử lại khi gặp lỗi kết nối
 - ✅ **Hỗ trợ adapter mở rộng**: PL2303, CH340, CP210, FTDI
 - ✅ **Cấu trúc code tối ưu**: Tách logic chính, dễ bảo trì và mở rộng
+- ✅ **Quản lý file size**: Tự động dọn dẹp file CSV khi quá lớn
 
 ### Ghi dữ liệu CSV
 - 📝 **File CSV riêng biệt**: Mỗi cảm biến có file CSV riêng với tên dựa trên cổng
 - 🕐 **Timestamp chính xác**: Ghi thời gian đo với định dạng YYYY-MM-DD HH:MM:SS
 - 📊 **Dữ liệu đầy đủ**: Ghi tất cả thông số bao gồm datetime, port và các giá trị đo
 - 🗂️ **Tổ chức khoa học**: Dữ liệu được lưu trong thư mục `data/csv_logs/`
+- 📏 **Quản lý dung lượng**: Tự động dọn dẹp file khi vượt quá kích thước
 
 ## 🗂️ Cấu trúc dự án
 
 ```
 ac_management/
 ├── src/                       # 📚 Thư viện chính
-│   ├── __init__.py
-│   └── pzem.py               # Thư viện PZEM-004T hoàn chỉnh
+│   ├── __init__.py           # Package initialization (17 dòng)
+│   └── pzem.py               # Thư viện PZEM-004T hoàn chỉnh (694 dòng)
 ├── tools/                     # 🔧 Công cụ ứng dụng
-│   ├── __init__.py
-│   ├── read_ac_sensor.py     # Script giám sát đa cảm biến
-│   └── reset_energy.py       # Tool reset energy counter
+│   ├── __init__.py           # Package initialization (7 dòng)
+│   ├── read_ac_sensor.py     # Script giám sát đa cảm biến (362 dòng)
+│   └── reset_energy.py       # Tool reset energy counter (82 dòng)
 ├── docs/                      # 📋 Tài liệu
-│   ├── PZEM004T.md           # Hướng dẫn chi tiết thư viện
-│   └── DATA_LOGGING.md       # Hướng dẫn CSV logging
+│   ├── PZEM004T.md           # Hướng dẫn chi tiết thư viện (572 dòng)
+│   └── DATA_LOGGING.md       # Hướng dẫn CSV logging (114 dòng)
 ├── data/                      # 📊 Dữ liệu
 │   └── csv_logs/             # File CSV logs
-│       ├── pzem__dev_ttyUSB0.csv
-│       ├── pzem__dev_ttyUSB1.csv
-│       └── pzem__dev_ttyUSB2.csv
-├── Makefile                   # 🛠️ Quản lý dự án
-├── requirements.txt           # 📦 Dependencies
-├── CHANGELOG.md              # 📝 Lịch sử thay đổi
-├── LICENSE                   # 📄 Giấy phép
-└── README.md                 # �� Tài liệu này
+│       ├── pzem__dev_ttyUSB0.csv (49 dòng dữ liệu)
+│       ├── pzem__dev_ttyUSB1.csv (49 dòng dữ liệu)
+│       └── pzem__dev_ttyUSB2.csv (49 dòng dữ liệu)
+├── Makefile                   # 🛠️ Quản lý dự án (84 dòng)
+├── requirements.txt           # 📦 Dependencies (4 dòng)
+├── CHANGELOG.md              # 📝 Lịch sử thay đổi (82 dòng)
+├── LICENSE                   # 📄 Giấy phép (22 dòng)
+└── README.md                 # 📖 Tài liệu này (407 dòng)
 ```
 
 ## 🔧 Yêu cầu phần cứng
@@ -341,9 +344,9 @@ sudo usermod -a -G dialout $USER
 ## 🤝 Đóng góp và phát triển
 
 ### Cấu trúc code
-- `src/pzem.py`: Thư viện PZEM-004T hoàn chỉnh
-- `tools/read_ac_sensor.py`: Ứng dụng giám sát đa cảm biến (đã cập nhật)
-- `tools/reset_energy.py`: Tool reset energy counter (đã cập nhật)
+- `src/pzem.py`: Thư viện PZEM-004T hoàn chỉnh (694 dòng)
+- `tools/read_ac_sensor.py`: Ứng dụng giám sát đa cảm biến (362 dòng)
+- `tools/reset_energy.py`: Tool reset energy counter (82 dòng)
 
 ### Các thay đổi chính trong read_ac_sensor.py
 - **Import thư viện mới**: Sử dụng `PZEM004T` thay vì `PZEM004Tv30`
@@ -351,13 +354,14 @@ sudo usermod -a -G dialout $USER
 - **Hỗ trợ adapter mở rộng**: Thêm CP210, FTDI ngoài PL2303, CH340
 - **Cấu trúc code**: Tách logic chính vào hàm `main()` để dễ bảo trì
 - **Xử lý lỗi**: Cải thiện error handling và retry mechanism
+- **Quản lý file size**: Tự động dọn dẹp file CSV khi quá lớn
 
 ### Các thay đổi chính trong reset_energy.py
-- **Menu tương tác**: 5 tùy chọn với giao diện thân thiện
+- **Giao diện đơn giản**: Tự động phát hiện và reset thiết bị
 - **Hiển thị thông tin**: Địa chỉ, năng lượng, công suất trước khi reset
-- **Xác nhận an toàn**: Nhiều cấp xác nhận để tránh reset nhầm
 - **Báo cáo chi tiết**: Tóm tắt kết quả reset với số liệu cụ thể
 - **Hỗ trợ adapter mở rộng**: PL2303, CH340, CP210, FTDI
+- **Error handling**: Timeout và retry mechanism
 
 ### Đóng góp
 1. Fork repository này

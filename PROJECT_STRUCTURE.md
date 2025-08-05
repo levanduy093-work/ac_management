@@ -2,160 +2,181 @@
 
 ## Tổng quan
 
-Dự án AC Management là một hệ thống Python chuyên nghiệp để giám sát và ghi dữ liệu từ cảm biến công suất điện PZEM-004T sử dụng giao thức Modbus-RTU.
+Dự án AC Management là một hệ thống Python chuyên nghiệp để giám sát và ghi dữ liệu từ cảm biến công suất điện PZEM-004T sử dụng giao thức Modbus-RTU. Dự án bao gồm thư viện hoàn chỉnh, ứng dụng giám sát đa cảm biến và các công cụ hỗ trợ.
 
 ## Cấu trúc thư mục
 
 ```
 ac_management/
 ├── src/                       # 📚 Thư viện chính
-│   ├── __init__.py           # Package initialization
-│   └── pzem.py               # Thư viện PZEM-004T hoàn chỉnh
+│   ├── __init__.py           # Package initialization (17 dòng)
+│   └── pzem.py               # Thư viện PZEM-004T hoàn chỉnh (694 dòng)
 ├── tools/                     # 🔧 Công cụ ứng dụng
-│   ├── __init__.py           # Package initialization
-│   ├── read_ac_sensor.py     # Script giám sát đa cảm biến
-│   └── reset_energy.py       # Tool reset energy counter
+│   ├── __init__.py           # Package initialization (7 dòng)
+│   ├── read_ac_sensor.py     # Script giám sát đa cảm biến (362 dòng)
+│   └── reset_energy.py       # Tool reset energy counter (82 dòng)
 ├── docs/                      # 📋 Tài liệu
-│   ├── PZEM004T.md           # Hướng dẫn chi tiết thư viện
-│   └── DATA_LOGGING.md       # Hướng dẫn CSV logging
+│   ├── PZEM004T.md           # Hướng dẫn chi tiết thư viện (572 dòng)
+│   └── DATA_LOGGING.md       # Hướng dẫn CSV logging (114 dòng)
 ├── data/                      # 📊 Dữ liệu
 │   └── csv_logs/             # File CSV logs
-│       ├── pzem__dev_ttyUSB0.csv
-│       ├── pzem__dev_ttyUSB1.csv
-│       └── pzem__dev_ttyUSB2.csv
-├── Makefile                   # 🛠️ Quản lý dự án
-├── requirements.txt           # 📦 Dependencies
-├── CHANGELOG.md              # 📝 Lịch sử thay đổi
-├── LICENSE                   # 📄 Giấy phép
-├── README.md                 # 📖 Tài liệu chính
-└── PROJECT_STRUCTURE.md      # 📋 File này
+│       ├── pzem__dev_ttyUSB0.csv (49 dòng dữ liệu)
+│       ├── pzem__dev_ttyUSB1.csv (49 dòng dữ liệu)
+│       └── pzem__dev_ttyUSB2.csv (49 dòng dữ liệu)
+├── Makefile                   # 🛠️ Quản lý dự án (84 dòng)
+├── requirements.txt           # 📦 Dependencies (4 dòng)
+├── CHANGELOG.md              # 📝 Lịch sử thay đổi (82 dòng)
+├── LICENSE                   # 📄 Giấy phép (22 dòng)
+├── README.md                 # 📖 Tài liệu chính (407 dòng)
+└── PROJECT_STRUCTURE.md      # 📋 File này (227 dòng)
 ```
 
 ## Mô tả chi tiết
 
 ### 📚 Thư viện chính (`src/`)
 
-#### `src/__init__.py`
+#### `src/__init__.py` (17 dòng)
 - Khởi tạo package Python
-- Export các class và function chính
+- Export các class chính: `PZEM004T`, `PZEM004Tv30`
+- Version: 2.0.0
+- Author: AC Management Team
 
-#### `src/pzem.py`
-- **Thư viện PZEM-004T hoàn chỉnh** (640 dòng)
-- Triển khai đầy đủ giao thức Modbus-RTU
-- Hỗ trợ tất cả function codes và register mapping
-- Xử lý lỗi toàn diện với CRC validation
-- Cache thông minh để tối ưu hiệu suất
+#### `src/pzem.py` (694 dòng)
+- **Thư viện PZEM-004T hoàn chỉnh** với triển khai đầy đủ giao thức Modbus-RTU
+- Hỗ trợ tất cả function codes và register mapping theo tài liệu kỹ thuật
+- Xử lý lỗi toàn diện với CRC validation và error handling
+- Cache thông minh để tối ưu hiệu suất (update_interval = 0.1s)
 - API đầy đủ cho đọc dữ liệu, cấu hình và điều khiển
+- Tương thích ngược với tên class cũ `PZEM004Tv30`
+- Hỗ trợ calibration và reset energy với verification
 
 ### 🔧 Công cụ ứng dụng (`tools/`)
 
-#### `tools/__init__.py`
+#### `tools/__init__.py` (7 dòng)
 - Khởi tạo package tools
+- Version: 2.0.0
 
-#### `tools/read_ac_sensor.py`
-- **Script giám sát đa cảm biến** (362 dòng)
+#### `tools/read_ac_sensor.py` (362 dòng)
+- **Script giám sát đa cảm biến** với tính năng nâng cao
 - Tự động phát hiện và kết nối với các thiết bị PZEM-004T
-- Đọc dữ liệu từ nhiều cảm biến cùng lúc
+- Hỗ trợ nhiều loại USB-to-Serial adapter: PL2303, CH340, CP210, FTDI
+- Đọc dữ liệu từ nhiều cảm biến cùng lúc với threading
 - Hiển thị dạng bảng với thông tin tổng hợp
-- Ghi dữ liệu CSV với timestamp
-- Hỗ trợ nhiều loại USB-to-Serial adapter
+- Ghi dữ liệu CSV với timestamp và quản lý file size
+- Cơ chế retry và error handling toàn diện
+- Tính tổng công suất và năng lượng của tất cả cảm biến
 
-#### `tools/reset_energy.py`
-- **Tool reset energy counter** (284 dòng)
-- Menu tương tác với 5 tùy chọn
-- Xác nhận an toàn trước khi reset
-- Hiển thị thông tin thiết bị trước khi reset
-- Báo cáo chi tiết kết quả reset
+#### `tools/reset_energy.py` (82 dòng)
+- **Tool reset energy counter** với giao diện đơn giản
+- Tự động phát hiện thiết bị PZEM-004T
+- Reset bộ đếm năng lượng cho từng thiết bị
+- Hiển thị trạng thái reset và báo cáo kết quả
 - Hỗ trợ nhiều loại USB-to-Serial adapter
+- Timeout và error handling
 
 ### 📋 Tài liệu (`docs/`)
 
-#### `docs/PZEM004T.md`
-- **Hướng dẫn chi tiết thư viện** (520 dòng)
-- API reference đầy đủ
-- Ví dụ sử dụng thực tế
-- Troubleshooting guide
-- Thông số kỹ thuật chi tiết
+#### `docs/PZEM004T.md` (572 dòng)
+- **Hướng dẫn chi tiết thư viện** với API reference đầy đủ
+- Ví dụ sử dụng thực tế và troubleshooting guide
+- Thông số kỹ thuật chi tiết theo datasheet
+- Hướng dẫn kết nối phần cứng và cài đặt
 
-#### `docs/DATA_LOGGING.md`
-- **Hướng dẫn CSV logging** (104 dòng)
-- Cấu trúc file CSV
-- Quản lý dữ liệu
-- Phân tích dữ liệu
+#### `docs/DATA_LOGGING.md` (114 dòng)
+- **Hướng dẫn CSV logging** với cấu trúc file chi tiết
+- Quản lý dữ liệu và phân tích
+- Backup và dọn dẹp dữ liệu cũ
 
 ### 📊 Dữ liệu (`data/`)
 
 #### `data/csv_logs/`
-- **File CSV logs** cho từng cảm biến
-- Tên file dựa trên cổng serial
-- Cấu trúc: `pzem__{port_name}.csv`
-- Dữ liệu với timestamp và tất cả thông số đo
+- **File CSV logs** cho từng cảm biến với dữ liệu thực tế
+- Tên file dựa trên cổng serial: `pzem__{port_name}.csv`
+- Cấu trúc: datetime, port, voltage_v, current_a, power_w, energy_wh, frequency_hz, power_factor, alarm_status
+- Dữ liệu với timestamp chính xác và tất cả thông số đo
 
 ### 🛠️ Quản lý dự án
 
-#### `Makefile`
-- **Quản lý dự án** (74 dòng)
-- Các lệnh cài đặt, test, lint, format
-- Chạy các công cụ chính
-- Documentation generation
+#### `Makefile` (84 dòng)
+- **Quản lý dự án** với các lệnh cài đặt, test, lint, format
+- Chạy các công cụ chính: `make run-monitor`, `make run-reset`
+- Documentation generation và project management
 
-#### `requirements.txt`
-- **Dependencies** (4 dòng)
-- pyserial: Giao tiếp serial
-- tabulate: Hiển thị bảng
-- pandas: Xử lý dữ liệu
+#### `requirements.txt` (4 dòng)
+- **Dependencies**: pyserial, tabulate, pandas
+- Phiên bản tối thiểu cho Python 3.7+
 
 ### 📝 Tài liệu dự án
 
-#### `README.md`
-- **Tài liệu chính** (405 dòng)
-- Tổng quan dự án
-- Hướng dẫn cài đặt và sử dụng
-- Tính năng chi tiết
-- Troubleshooting
+#### `README.md` (407 dòng)
+- **Tài liệu chính** với tổng quan dự án chi tiết
+- Hướng dẫn cài đặt và sử dụng từng bước
+- Tính năng chi tiết và troubleshooting guide
+- Thông số kỹ thuật chính xác theo datasheet
+- Ví dụ sử dụng và giao diện output
 
-#### `CHANGELOG.md`
-- **Lịch sử thay đổi** (67 dòng)
-- Theo format Keep a Changelog
-- Semantic Versioning
+#### `CHANGELOG.md` (82 dòng)
+- **Lịch sử thay đổi** theo format Keep a Changelog
+- Semantic Versioning với phiên bản 2.0.0 hiện tại
 - Chi tiết các thay đổi qua các phiên bản
 
-#### `LICENSE`
-- **Giấy phép MIT** (22 dòng)
-- Điều khoản sử dụng và phân phối
+#### `LICENSE` (22 dòng)
+- **Giấy phép MIT** với điều khoản sử dụng và phân phối
 
 ## Tính năng chính
 
 ### Thư viện PZEM-004T
-- ✅ Đọc đầy đủ dữ liệu: Voltage, Current, Power, Energy, Frequency, Power Factor
-- ✅ Thông số kỹ thuật chính xác: Theo tài liệu PZEM-004T với độ chính xác ±0.5%
-- ✅ Cấu hình thiết bị: Set/Get power alarm threshold, change device address
-- ✅ Điều khiển: Reset energy counter, calibration (factory use)
-- ✅ Xử lý lỗi: CRC validation, Modbus error handling, retry mechanism
-- ✅ Cache thông minh: Tối ưu hiệu suất với cache dữ liệu
-- ✅ API linh hoạt: Đọc từng giá trị hoặc tất cả cùng lúc
-- ✅ Quy tắc hiển thị: Tuân thủ datasheet cho công suất và năng lượng
+- ✅ **Đọc đầy đủ dữ liệu**: Voltage, Current, Power, Energy, Frequency, Power Factor
+- ✅ **Thông số kỹ thuật chính xác**: Theo tài liệu PZEM-004T với độ chính xác ±0.5%
+- ✅ **Cấu hình thiết bị**: Set/Get power alarm threshold, change device address
+- ✅ **Điều khiển**: Reset energy counter, calibration (factory use)
+- ✅ **Xử lý lỗi**: CRC validation, Modbus error handling, retry mechanism
+- ✅ **Cache thông minh**: Tối ưu hiệu suất với cache dữ liệu (0.1s interval)
+- ✅ **API linh hoạt**: Đọc từng giá trị hoặc tất cả cùng lúc
+- ✅ **Quy tắc hiển thị**: Tuân thủ datasheet cho công suất và năng lượng
+- ✅ **Tương thích ngược**: Hỗ trợ cả tên class cũ và mới
 
 ### Công cụ hỗ trợ
-- ✅ Tool reset energy: Menu tương tác, xác nhận an toàn, báo cáo chi tiết
-- ✅ Hỗ trợ đa adapter: PL2303, CH340, CP210, FTDI
-- ✅ Giao diện thân thiện: Emoji, màu sắc, thông báo rõ ràng
-- ✅ Bảo mật cao: Nhiều cấp xác nhận để tránh reset nhầm
+- ✅ **Tool reset energy**: Tự động phát hiện, reset với báo cáo chi tiết
+- ✅ **Hỗ trợ đa adapter**: PL2303, CH340, CP210, FTDI
+- ✅ **Error handling**: Timeout và retry mechanism
+- ✅ **Bảo mật**: Xác nhận trước khi reset
 
 ### Ứng dụng giám sát đa cảm biến
-- ✅ Tự động phát hiện cảm biến: Quét và kết nối tự động với các thiết bị PZEM-004T
-- ✅ Đa cảm biến: Hỗ trợ đọc từ nhiều cảm biến cùng lúc
-- ✅ Hiển thị dạng bảng: Dữ liệu từ tất cả cảm biến hiển thị trong bảng thống nhất
-- ✅ Thông tin tổng hợp: Tính tổng công suất và năng lượng của tất cả cảm biến
-- ✅ Cơ chế retry: Tự động thử lại khi gặp lỗi kết nối
-- ✅ Hỗ trợ adapter mở rộng: PL2303, CH340, CP210, FTDI
-- ✅ Cấu trúc code tối ưu: Tách logic chính, dễ bảo trì và mở rộng
+- ✅ **Tự động phát hiện cảm biến**: Quét và kết nối tự động với các thiết bị PZEM-004T
+- ✅ **Đa cảm biến**: Hỗ trợ đọc từ nhiều cảm biến cùng lúc với threading
+- ✅ **Hiển thị dạng bảng**: Dữ liệu từ tất cả cảm biến hiển thị trong bảng thống nhất
+- ✅ **Thông tin tổng hợp**: Tính tổng công suất và năng lượng của tất cả cảm biến
+- ✅ **Cơ chế retry**: Tự động thử lại khi gặp lỗi kết nối
+- ✅ **Hỗ trợ adapter mở rộng**: PL2303, CH340, CP210, FTDI
+- ✅ **Cấu trúc code tối ưu**: Tách logic chính, dễ bảo trì và mở rộng
+- ✅ **Quản lý file size**: Tự động dọn dẹp file CSV khi quá lớn
 
 ### Ghi dữ liệu CSV
-- 📝 File CSV riêng biệt: Mỗi cảm biến có file CSV riêng với tên dựa trên cổng
-- 🕐 Timestamp chính xác: Ghi thời gian đo với định dạng YYYY-MM-DD HH:MM:SS
-- 📊 Dữ liệu đầy đủ: Ghi tất cả thông số bao gồm datetime, port và các giá trị đo
-- 🗂️ Tổ chức khoa học: Dữ liệu được lưu trong thư mục `data/csv_logs/`
+- 📝 **File CSV riêng biệt**: Mỗi cảm biến có file CSV riêng với tên dựa trên cổng
+- 🕐 **Timestamp chính xác**: Ghi thời gian đo với định dạng YYYY-MM-DD HH:MM:SS
+- 📊 **Dữ liệu đầy đủ**: Ghi tất cả thông số bao gồm datetime, port và các giá trị đo
+- 🗂️ **Tổ chức khoa học**: Dữ liệu được lưu trong thư mục `data/csv_logs/`
+- 📏 **Quản lý dung lượng**: Tự động dọn dẹp file khi vượt quá kích thước
+
+## Thông số kỹ thuật
+
+### Phần cứng được hỗ trợ
+- **Cảm biến**: PZEM-004T-10A (0-10A), PZEM-004T-100A (0-100A)
+- **USB-to-Serial adapter**: PL2303, CH340, CP210, FTDI
+- **Kết nối**: TTL interface với đầy đủ 4 chân (GND, TX, RX, 5V)
+
+### Thông số đo chính xác
+- **Voltage**: 80-260V, resolution 0.1V, accuracy ±0.5%
+- **Current**: 0-10A/0-100A, resolution 0.001A, accuracy ±0.5%
+- **Power**: 0-2.3kW/0-23kW, resolution 0.1W, accuracy ±0.5%
+- **Energy**: 0-9999.99kWh, resolution 1Wh, accuracy ±0.5%
+- **Frequency**: 45-65Hz, resolution 0.1Hz, accuracy ±0.5%
+- **Power Factor**: 0.00-1.00, resolution 0.01, accuracy ±1%
+
+### Quy tắc hiển thị theo datasheet
+- **Power**: <1000W hiển thị 1 chữ số thập phân, ≥1000W hiển thị số nguyên
+- **Energy**: <10kWh đơn vị Wh, ≥10kWh đơn vị kWh
 
 ## Roadmap
 
@@ -224,4 +245,4 @@ print(f"Power: {measurements['power']:.1f}W")
 
 ---
 
-**Lưu ý**: Cấu trúc này được cập nhật lần cuối vào tháng 8/2025 và phản ánh trạng thái hiện tại của dự án. 
+**Lưu ý**: Cấu trúc này được cập nhật lần cuối vào tháng 8/2025 và phản ánh trạng thái hiện tại của dự án với phiên bản 2.0.0. 
