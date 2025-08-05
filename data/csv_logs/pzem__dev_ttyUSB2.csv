@@ -45,3 +45,4 @@ datetime,port,voltage_v,current_a,power_w,energy_wh,frequency_hz,power_factor,al
 2025-08-05 11:07:46,/dev/ttyUSB2,209.6,0.031,0.0,20.0,50.1,0.00,OFF
 2025-08-05 11:07:53,/dev/ttyUSB2,209.4,0.031,0.0,20.0,50.1,0.00,OFF
 2025-08-05 11:07:59,/dev/ttyUSB2,209.8,0.031,0.0,20.0,50.1,0.00,OFF
+2025-08-05 11:08:05,/dev/ttyUSB2,209.1,0.031,0.0,20.0,50.0,0.00,OFF
