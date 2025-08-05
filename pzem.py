@@ -1,9 +1,7 @@
-# Reading multiple PZEM-004t sensors (v3.0) concurrently using Modbus-RTU
-# The script automatically detects PL2303 USB-to-Serial adapters and reads from them every second.
+# Reading multiple PZEM-004t sensors (v3.0) concurrently using the custom pzem_python library.
+# The script automatically detects PL2303 USB-to-Serial adapters and reads from them.
 
 import serial
-import modbus_tk.defines as cst
-from modbus_tk import modbus_rtu
 import serial.tools.list_ports
 import threading
 import time
@@ -12,6 +10,9 @@ import os
 import pandas as pd
 from datetime import datetime
 import csv
+
+# Import the new library
+from pzem_python import PZEM004Tv30
 
 def find_pzem_ports():
     """
@@ -120,85 +121,36 @@ def save_to_csv(sensor_data):
 
 def read_pzem_data(port):
     """
-    Connects to a PZEM sensor on a given port, reads its data, and returns it.
-    Returns a dictionary with sensor data or None if failed.
+    Connects to a PZEM sensor on a given port using the PZEM004Tv30 library,
+    reads its data, and returns it as a dictionary.
+    Returns None if failed.
     """
-    master = None
-    sensor = None
+    pzem = None
     try:
-        # Connect to the sensor with improved settings for Raspberry Pi
-        sensor = serial.Serial(
-            port=port,
-            baudrate=9600,
-            bytesize=8,
-            parity='N',
-            stopbits=1,
-            xonxoff=0,
-            timeout=2.0,  # Increased timeout for Raspberry Pi
-            write_timeout=2.0,  # Add write timeout
-            inter_byte_timeout=0.1  # Add inter-byte timeout
-        )
-        
-        # Wait a bit for the port to stabilize
-        time.sleep(0.1)
-        
-        # Clear any existing data in buffers
-        sensor.reset_input_buffer()
-        sensor.reset_output_buffer()
+        # Instantiate the PZEM sensor from our new library
+        pzem = PZEM004Tv30(port=port, timeout=2.0)
 
-        master = modbus_rtu.RtuMaster(sensor)
-        master.set_timeout(3.0)  # Increased timeout
-        # master.set_interframe_delay(0.01)  # Not available in this version
-        # master.set_verbose(True) # Uncomment for detailed Modbus communication logging
+        # Read all values from the sensor at once
+        if pzem.update_values():
+            # Unpack data from the values dictionary
+            # Note: The library returns energy in kWh, so we convert to Wh for consistency
+            energy_wh = pzem.values['energy'] * 1000
 
-        # Wait a bit more before reading
-        time.sleep(0.05)
-        
-        # Try reading with retry mechanism
-        max_retries = 3
-        data = None
-        
-        for attempt in range(max_retries):
-            try:
-                # Read 10 registers starting from address 0
-                data = master.execute(1, cst.READ_INPUT_REGISTERS, 0, 10)
-                break  # Success, exit retry loop
-            except Exception as e:
-                if attempt < max_retries - 1:
-                    print(f"Attempt {attempt + 1} failed for {port}: {e}. Retrying...")
-                    time.sleep(0.1)
-                    # Clear buffers before retry
-                    sensor.reset_input_buffer()
-                    sensor.reset_output_buffer()
-                else:
-                    raise e  # Last attempt failed, re-raise the exception
-        
-        if data is None:
-            raise Exception("Failed to read data after retries")
-
-        # Unpack data according to the PZEM-004t v3.0 documentation
-        voltage = data[0] / 10.0  # [V]
-        current = (data[1] + (data[2] << 16)) / 1000.0  # [A]
-        power = (data[3] + (data[4] << 16)) / 10.0  # [W]
-        energy = data[5] + (data[6] << 16)  # [Wh]
-        frequency = data[7] / 10.0  # [Hz]
-        powerFactor = data[8] / 100.0
-        alarm = data[9]  # 0 = no alarm, 1 = alarm
-
-        # Return the collected data as a dictionary
-        sensor_data = {
-            'port': port,
-            'voltage': voltage,
-            'current': current,
-            'power': power,
-            'energy': energy,
-            'frequency': frequency,
-            'power_factor': powerFactor,
-            'alarm': alarm,
-            'timestamp': datetime.now()
-        }
-        
-        return sensor_data
+            sensor_data = {
+                'port': port,
+                'voltage': pzem.values['voltage'],
+                'current': pzem.values['current'],
+                'power': pzem.values['power'],
+                'energy': energy_wh,
+                'frequency': pzem.values['frequency'],
+                'power_factor': pzem.values['pf'],
+                'alarm': pzem.values['alarms'] != 0, # Convert alarm status to boolean
+                'timestamp': datetime.now()
+            }
+            return sensor_data
+        else:
+            print(f"Could not read from {port}: Failed to update values.")
+            return None
 
     except Exception as e:
         print(f"Could not read from {port}: {e}")
@@ -206,14 +158,8 @@ def read_pzem_data(port):
 
     finally:
         # Ensure the connection is always closed
-        try:
-            if master:
-                master.close()
-            if sensor and sensor.is_open:
-                sensor.close()
-        except Exception as e:
-            # This can happen if the port was never opened, which is fine.
-            pass
+        if pzem:
+            pzem.close()
 
 def display_sensors_table(sensor_data_list):
     """
