@@ -315,7 +315,8 @@ class PZEM004T:
         self._measurements['voltage'] = values[0] * self.VOLTAGE_RESOLUTION
         self._measurements['current'] = (values[1] + (values[2] << 16)) * self.CURRENT_RESOLUTION
         self._measurements['power'] = (values[3] + (values[4] << 16)) * self.POWER_RESOLUTION
-        self._measurements['energy'] = (values[5] + (values[6] << 16)) * self.ENERGY_RESOLUTION
+        # Energy: raw value is in Wh, convert to kWh by dividing by 1000
+        self._measurements['energy'] = (values[5] + (values[6] << 16)) / 1000.0
         self._measurements['frequency'] = values[7] * self.FREQUENCY_RESOLUTION
         self._measurements['power_factor'] = values[8] * self.PF_RESOLUTION
         self._measurements['alarm_status'] = values[9] != 0x0000
