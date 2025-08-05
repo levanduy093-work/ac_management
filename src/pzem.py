@@ -633,10 +633,10 @@ class PZEM004T:
         
         # Format energy according to datasheet rules
         energy = measurements['energy']
-        if energy < 10:
-            energy_str = f"{energy * 1000:.0f}Wh"  # Convert kWh to Wh
+        if energy < 10000:  # < 10kWh
+            energy_str = f"{energy:.0f}Wh"
         else:
-            energy_str = f"{energy:.2f}kWh"
+            energy_str = f"{energy/1000:.2f}kWh"  # Convert Wh to kWh
         
         return {
             'voltage': f"{measurements['voltage']:.1f}V",
@@ -661,10 +661,10 @@ class PZEM004T:
         
         # Format energy according to datasheet rules
         energy = measurements['energy']
-        if energy < 10:
-            energy_str = f"{energy * 1000:.0f} Wh"  # Convert kWh to Wh
+        if energy < 10000:  # < 10kWh
+            energy_str = f"{energy:.0f} Wh"
         else:
-            energy_str = f"{energy:.2f} kWh"
+            energy_str = f"{energy/1000:.2f} kWh"  # Convert Wh to kWh
         
         print("=== PZEM-004T Measurements ===")
         print(f"Voltage:      {measurements['voltage']:6.1f} V")
