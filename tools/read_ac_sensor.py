@@ -12,6 +12,9 @@ from datetime import datetime
 import csv
 
 # Import the new PZEM-004T library
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 from pzem import PZEM004T
 
 def find_pzem_ports():

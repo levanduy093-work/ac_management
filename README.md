@@ -74,19 +74,29 @@ Script sẽ đọc và hiển thị các thông số điện quan trọng từ m
 
 ```
 ac_management/
-├── 📜 pzem.py                 # Thư viện PZEM-004T hoàn chỉnh
-├── 📜 read_ac_sensor.py       # Script giám sát đa cảm biến
-├── 📜 example_usage.py        # 6 ví dụ sử dụng thư viện
-├── 📜 reset_energy.py         # Tool reset energy counter (đã cập nhật)
-├── 📋 requirements.txt        # Dependencies
-├── 📖 README.md              # Tài liệu này
-├── 📖 PZEM004T.md            # Hướng dẫn chi tiết thư viện
-├── 📝 DATA_LOGGING.md        # Hướng dẫn CSV logging
-└── 📁 data/                  # Thư mục dữ liệu
-    └── 📁 csv_logs/          # File CSV logs
-        ├── 📊 pzem__dev_ttyUSB0.csv
-        ├── 📊 pzem__dev_ttyUSB1.csv
-        └── 📊 pzem__dev_ttyUSB2.csv
+├── src/                       # 📚 Thư viện chính
+│   ├── __init__.py
+│   └── pzem.py               # Thư viện PZEM-004T hoàn chỉnh
+├── tools/                     # 🔧 Công cụ ứng dụng
+│   ├── __init__.py
+│   ├── read_ac_sensor.py     # Script giám sát đa cảm biến
+│   └── reset_energy.py       # Tool reset energy counter
+├── examples/                  # 📖 Ví dụ sử dụng
+│   ├── __init__.py
+│   └── example_usage.py      # 6 ví dụ sử dụng thư viện
+├── docs/                      # 📋 Tài liệu
+│   ├── PZEM004T.md           # Hướng dẫn chi tiết thư viện
+│   └── DATA_LOGGING.md       # Hướng dẫn CSV logging
+├── data/                      # 📊 Dữ liệu
+│   └── csv_logs/             # File CSV logs
+│       ├── pzem__dev_ttyUSB0.csv
+│       ├── pzem__dev_ttyUSB1.csv
+│       └── pzem__dev_ttyUSB2.csv
+├── setup.py                   # ⚙️ Cài đặt thư viện
+├── Makefile                   # 🛠️ Quản lý dự án
+├── quick_start.py            # 🚀 Demo nhanh
+├── requirements.txt           # 📦 Dependencies
+└── README.md                 # 📖 Tài liệu này
 ```
 
 ## 🔧 Yêu cầu phần cứng
@@ -154,54 +164,66 @@ sudo chmod 666 /dev/ttyUSB*
 
 ## 🚀 Sử dụng
 
-### 1. Sử dụng thư viện PZEM-004T
+### 1. Cài đặt nhanh
+```bash
+# Clone repository
+git clone <repository-url>
+cd ac_management
 
-#### Cách sử dụng cơ bản
+# Cài đặt thư viện
+pip install -e .
+
+# Hoặc sử dụng Makefile
+make install
+```
+
+### 2. Demo nhanh
+```bash
+# Chạy demo để kiểm tra thiết bị
+python quick_start.py
+
+# Hoặc sử dụng Makefile
+make quick-start
+```
+
+### 3. Sử dụng các công cụ
+
+#### Giám sát đa cảm biến
+```bash
+python tools/read_ac_sensor.py
+
+# Hoặc sử dụng Makefile
+make run-monitor
+```
+
+#### Reset energy counter
+```bash
+python tools/reset_energy.py
+
+# Hoặc sử dụng Makefile
+make run-reset
+```
+
+#### Ví dụ sử dụng thư viện
+```bash
+python examples/example_usage.py
+
+# Hoặc sử dụng Makefile
+make run-example
+```
+
+### 4. Sử dụng thư viện trong code
 ```python
-from pzem import PZEM004T
+from src.pzem import PZEM004T
 
-# Khởi tạo kết nối
+# Tạo instance
 pzem = PZEM004T(port='/dev/ttyUSB0')
 
 # Đọc dữ liệu
-voltage = pzem.get_voltage()      # V
-current = pzem.get_current()      # A
-power = pzem.get_power()          # W
-energy = pzem.get_energy()        # kWh
-
-# In tất cả giá trị
-pzem.print_measurements()
-
-# Đóng kết nối
-pzem.close()
+measurements = pzem.get_all_measurements()
+print(f"Voltage: {measurements['voltage']:.1f}V")
+print(f"Power: {measurements['power']:.1f}W")
 ```
-
-#### Chạy ví dụ
-```bash
-python3 example_usage.py
-```
-
-### 2. Giám sát đa cảm biến (Đã cập nhật)
-```bash
-python3 read_ac_sensor.py
-```
-
-**Tính năng mới:**
-- Sử dụng thư viện PZEM-004T mới với hiệu suất tốt hơn
-- Hỗ trợ nhiều loại USB-to-Serial adapter
-- Cấu trúc code tối ưu và dễ bảo trì
-
-### 3. Reset energy counter (Đã cập nhật)
-```bash
-python3 reset_energy.py
-```
-
-**Tính năng mới:**
-- Menu tương tác với 5 tùy chọn
-- Hiển thị thông tin thiết bị trước khi reset
-- Xác nhận an toàn nhiều cấp
-- Báo cáo kết quả chi tiết
-- Hỗ trợ nhiều loại USB-to-Serial adapter
 
 ## 📱 Giao diện và Output
 

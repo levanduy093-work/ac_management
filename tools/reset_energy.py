@@ -17,6 +17,9 @@ Tính năng:
 import serial
 import serial.tools.list_ports
 import time
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 from pzem import PZEM004T
 
 def find_pzem_ports():
