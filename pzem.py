@@ -43,7 +43,7 @@ class PZEM004T:
     READ_INPUT_REGISTERS = 0x04
     WRITE_SINGLE_REGISTER = 0x06
     CALIBRATION = 0x41
-    RESET_ENERGY = 0x42
+    ESET_ENERGY = 0x42
     
     # Register addresses for measurements
     REG_VOLTAGE = 0x0000
@@ -414,53 +414,150 @@ class PZEM004T:
         value = struct.unpack('>H', response[3:5])[0]
         return value
     
-    def reset_energy(self) -> bool:
+    def test_reset_support(self) -> bool:
+        """
+        Test if the device supports reset energy command.
+        
+        Returns:
+            bool: True if device responds to reset command
+        """
+        try:
+            # Clear input buffer
+            self.serial.flushInput()
+            
+            # Send reset command
+            packet = struct.pack('>BB', self.address, self.RESET_ENERGY)
+            packet += self._crc16(packet)
+            
+            self.serial.write(packet)
+            
+            # Wait longer for device to process
+            time.sleep(0.3)
+            
+            # Read response with timeout
+            response = b''
+            start_time = time.time()
+            timeout = 1.0  # 1 second timeout
+            
+            while len(response) < 4 and (time.time() - start_time) < timeout:
+                chunk = self.serial.read(1)
+                if chunk:
+                    response += chunk
+                else:
+                    time.sleep(0.01)
+            
+            if response and len(response) >= 2:
+                # Check if device responded (even if it's an error)
+                if response[1] in [0x42, 0xC2]:
+                    return True
+            
+            return False
+            
+        except Exception as e:
+            logging.debug(f"Error testing reset support: {e}")
+            return False
+    
+    def reset_energy(self, max_retries: int = 2) -> bool:
         """
         Reset energy counter to zero.
         
+        Args:
+            max_retries: Maximum number of retry attempts
+            
         Returns:
             bool: True on success
         """
-        # Clear input buffer before sending command
-        if self.serial and self.serial.is_open:
-            self.serial.flushInput()
+        for attempt in range(max_retries + 1):
+            try:
+                # Clear input buffer before sending command
+                if self.serial and self.serial.is_open:
+                    self.serial.flushInput()
+                
+                # Build reset command manually for better control
+                packet = struct.pack('>BB', self.address, self.RESET_ENERGY)
+                packet += self._crc16(packet)
+                
+                logging.debug(f"Reset energy command (attempt {attempt + 1}): {packet.hex()}")
+                
+                # Send command
+                self.serial.write(packet)
+                
+                # Wait longer for device to process
+                time.sleep(0.3)
+                
+                # Read response with timeout
+                response = b''
+                start_time = time.time()
+                timeout = 3.0  # 3 seconds timeout
+                
+                while len(response) < 4 and (time.time() - start_time) < timeout:
+                    chunk = self.serial.read(1)
+                    if chunk:
+                        response += chunk
+                    else:
+                        time.sleep(0.01)  # Small delay
+                
+                logging.debug(f"Reset energy response (attempt {attempt + 1}): {response.hex() if response else 'None'}")
+                
+                if not response:
+                    if attempt < max_retries:
+                        logging.warning(f"No response on attempt {attempt + 1}, retrying...")
+                        time.sleep(0.5)  # Wait before retry
+                        continue
+                    else:
+                        logging.error("No response received from device after all attempts")
+                        return False
+                
+                if len(response) < 4:
+                    if attempt < max_retries:
+                        logging.warning(f"Response too short on attempt {attempt + 1}, retrying...")
+                        time.sleep(0.5)  # Wait before retry
+                        continue
+                    else:
+                        logging.error(f"Reset energy response too short: {len(response)} bytes, expected 4")
+                        return False
+                
+                # Validate CRC
+                if not self._validate_crc(response):
+                    if attempt < max_retries:
+                        logging.warning(f"Invalid CRC on attempt {attempt + 1}, retrying...")
+                        time.sleep(0.5)  # Wait before retry
+                        continue
+                    else:
+                        logging.error("Invalid CRC in reset energy response")
+                        return False
+                
+                # Check for error response (0xC2 instead of 0x42)
+                if len(response) >= 2 and response[1] == 0xC2:
+                    error_code = response[2] if len(response) > 2 else 0
+                    self._handle_error(error_code)
+                    return False
+                
+                # Check for correct response (0x42)
+                if len(response) >= 2 and response[1] == 0x42:
+                    logging.info("Energy counter reset successfully")
+                    # Clear cached energy value
+                    self._measurements['energy'] = 0.0
+                    return True
+                
+                # Unexpected response
+                if attempt < max_retries:
+                    logging.warning(f"Unexpected response on attempt {attempt + 1}, retrying...")
+                    time.sleep(0.5)  # Wait before retry
+                    continue
+                else:
+                    logging.error(f"Unexpected reset energy response: {response.hex()}")
+                    return False
+                    
+            except Exception as e:
+                if attempt < max_retries:
+                    logging.warning(f"Exception on attempt {attempt + 1}: {e}, retrying...")
+                    time.sleep(0.5)  # Wait before retry
+                    continue
+                else:
+                    logging.error(f"Exception during reset energy: {e}")
+                    return False
         
-        # Build reset command manually for better control
-        packet = struct.pack('>BB', self.address, self.RESET_ENERGY)
-        packet += self._crc16(packet)
-        
-        logging.debug(f"Reset energy command: {packet.hex()}")
-        
-        # Send command
-        self.serial.write(packet)
-        
-        # Read response
-        response = self.serial.read(4)
-        logging.debug(f"Reset energy response: {response.hex() if response else 'None'}")
-        
-        if not response or len(response) < 4:
-            logging.error(f"Reset energy response invalid: {response}")
-            return False
-        
-        # Validate CRC
-        if not self._validate_crc(response):
-            logging.error("Invalid CRC in reset energy response")
-            return False
-        
-        # Check for error response (0xC2 instead of 0x42)
-        if len(response) >= 2 and response[1] == 0xC2:
-            error_code = response[2] if len(response) > 2 else 0
-            self._handle_error(error_code)
-            return False
-        
-        # Check for correct response (0x42)
-        if len(response) >= 2 and response[1] == 0x42:
-            logging.info("Energy counter reset successfully")
-            # Clear cached energy value
-            self._measurements['energy'] = 0.0
-            return True
-        
-        logging.error(f"Unexpected reset energy response: {response.hex()}")
         return False
     
     def calibrate(self) -> bool:
