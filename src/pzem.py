@@ -492,13 +492,11 @@ class PZEM004T:
     def reset_energy(self, verify_reset: bool = True) -> bool:
         """
         Reset energy counter to zero.
+        Based on the original C++ implementation from PZEM004Tv30.cpp
         
         Args:
             verify_reset: If True, verify the reset by reading energy value after reset
             
-        Note: Some PZEM devices may not send a response to the reset command.
-        This method assumes success if the command is sent properly.
-        
         Returns:
             bool: True on success
         """
@@ -515,8 +513,9 @@ class PZEM004T:
             if self.serial and self.serial.is_open:
                 self.serial.flushInput()
             
-            # Build reset command
-            packet = struct.pack('>BB', self.address, self.RESET_ENERGY)
+            # Build reset command exactly like C++ implementation
+            # [addr, 0x42, 0x00, 0x00] + CRC
+            packet = struct.pack('>BBHH', self.address, self.RESET_ENERGY, 0x0000, 0x0000)
             packet += self._crc16(packet)
             
             logging.debug(f"Reset energy command: {packet.hex()}")
@@ -524,41 +523,35 @@ class PZEM004T:
             # Send command
             self.serial.write(packet)
             
-            # Wait for device to process the command
-            time.sleep(0.1)
+            # Wait for device to process the command (increased delay)
+            time.sleep(0.2)
             
-            # Try to read response (optional - device may not respond)
-            response = self.serial.read(4)
+            # Read response - try to read 5 bytes like C++ implementation
+            response = self.serial.read(5)
             
-            reset_confirmed = False
+            # Check response length like C++ implementation
+            # Success condition: length != 0 && length != 5
+            if len(response) == 0:
+                logging.warning("No response received from device")
+                # Assume success if no response (some devices don't respond)
+                reset_success = True
+            elif len(response) == 5:
+                logging.warning("Received 5 bytes response - may indicate error")
+                reset_success = False
+            else:
+                logging.info(f"Received {len(response)} bytes response - reset successful")
+                reset_success = True
             
-            if response and len(response) >= 2:
-                logging.debug(f"Reset energy response: {response.hex()}")
-                
-                # If device responds, validate the response
-                if len(response) >= 4 and self._validate_crc(response):
-                    # Check for error response (0xC2)
-                    if response[1] == 0xC2:
-                        error_code = response[2] if len(response) > 2 else 0
-                        self._handle_error(error_code)
-                        return False
-                    
-                    # Check for success response (0x42)
-                    if response[1] == 0x42:
-                        logging.info("Energy counter reset successfully (confirmed)")
-                        reset_confirmed = True
-            
-            # If no response or invalid response, assume success
-            # (This is the behavior of the original library)
-            if not reset_confirmed:
-                logging.info("Energy counter reset (assumed success)")
+            if not reset_success:
+                logging.error("Reset energy failed")
+                return False
             
             # Clear cached energy value
             self._measurements['energy'] = 0.0
             
             # Verify reset by reading energy value
             if verify_reset and energy_before is not None:
-                time.sleep(0.5)  # Wait for device to update
+                time.sleep(1.0)  # Wait longer for device to update
                 measurements = self.get_all_measurements()
                 if measurements:
                     energy_after = measurements['energy']
