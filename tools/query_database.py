@@ -15,7 +15,7 @@ import json
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 from database import PZEMDatabase
 
-def export_to_csv(db, output_file=None, port=None, days=None, limit=None, separate_by_port=False, overwrite=False):
+def export_to_csv(db, output_file=None, port=None, days=None, limit=None, separate_by_port=False, overwrite=True):
     """
     Export data to CSV file(s)
     
@@ -26,7 +26,7 @@ def export_to_csv(db, output_file=None, port=None, days=None, limit=None, separa
         days: Number of days to look back
         limit: Maximum number of records
         separate_by_port: If True, export each port to separate files
-        overwrite: If True, overwrite existing files instead of creating new ones with timestamp
+        overwrite: If True, overwrite existing files instead of creating new ones with timestamp (default: True)
     """
     try:
         # Create csv_log directory if it doesn't exist
@@ -116,7 +116,7 @@ def export_to_csv(db, output_file=None, port=None, days=None, limit=None, separa
         print(f"❌ Error exporting to CSV: {e}")
         return False
 
-def export_to_json(db, output_file=None, port=None, days=None, limit=None, separate_by_port=False, overwrite=False):
+def export_to_json(db, output_file=None, port=None, days=None, limit=None, separate_by_port=False, overwrite=True):
     """
     Export data to JSON file(s)
     
@@ -127,7 +127,7 @@ def export_to_json(db, output_file=None, port=None, days=None, limit=None, separ
         days: Number of days to look back
         limit: Maximum number of records
         separate_by_port: If True, export each port to separate files
-        overwrite: If True, overwrite existing files instead of creating new ones with timestamp
+        overwrite: If True, overwrite existing files instead of creating new ones with timestamp (default: True)
     """
     try:
         # Create json_log directory if it doesn't exist
@@ -322,8 +322,8 @@ Examples:
   # Export each port to separate JSON files
   python query_database.py --export-json-separate --days 30
   
-  # Overwrite existing files instead of creating new ones with timestamp
-  python query_database.py --export-csv-separate --overwrite --days 7
+  # Do not overwrite existing files, create new ones with timestamp
+  python query_database.py --export-csv-separate --no-overwrite --days 7
   
   # Clean up data older than 30 days
   python query_database.py --cleanup 30
@@ -352,8 +352,8 @@ Examples:
                        help='Limit number of records to export')
     parser.add_argument('--cleanup', type=int, metavar='DAYS',
                        help='Clean up data older than N days')
-    parser.add_argument('--overwrite', action='store_true',
-                       help='Overwrite existing files instead of creating new ones with timestamp')
+    parser.add_argument('--no-overwrite', action='store_true',
+                       help='Do not overwrite existing files, create new ones with timestamp instead')
     parser.add_argument('--db-path', metavar='PATH',
                        default='data/pzem_data.db',
                        help='Database file path (default: data/pzem_data.db)')
@@ -385,16 +385,16 @@ Examples:
         show_latest_data(db, args.latest)
     
     if args.export_csv:
-        export_to_csv(db, args.export_csv, args.port, args.days, args.limit, separate_by_port=False, overwrite=args.overwrite)
+        export_to_csv(db, args.export_csv, args.port, args.days, args.limit, separate_by_port=False, overwrite=not args.no_overwrite)
     
     if args.export_json:
-        export_to_json(db, args.export_json, args.port, args.days, args.limit, separate_by_port=False, overwrite=args.overwrite)
+        export_to_json(db, args.export_json, args.port, args.days, args.limit, separate_by_port=False, overwrite=not args.no_overwrite)
     
     if args.export_csv_separate:
-        export_to_csv(db, None, args.port, args.days, args.limit, separate_by_port=True, overwrite=args.overwrite)
+        export_to_csv(db, None, args.port, args.days, args.limit, separate_by_port=True, overwrite=not args.no_overwrite)
     
     if args.export_json_separate:
-        export_to_json(db, None, args.port, args.days, args.limit, separate_by_port=True, overwrite=args.overwrite)
+        export_to_json(db, None, args.port, args.days, args.limit, separate_by_port=True, overwrite=not args.no_overwrite)
     
     if args.cleanup:
         cleanup_database(db, args.cleanup)

@@ -214,8 +214,9 @@ class DatabaseGUI:
             if not filename.endswith('.csv'):
                 filename += '.csv'
             
-            # Ask about overwrite
-            overwrite = input("Overwrite existing file? (y/N): ").strip().lower() == 'y'
+            # Ask about overwrite (default: yes)
+            overwrite_input = input("Overwrite existing file? (Y/n): ").strip().lower()
+            overwrite = overwrite_input != 'n'  # Default to True unless user explicitly says 'n'
             if not overwrite and not filename.startswith('export_'):
                 # Add timestamp if not overwriting and not already timestamped
                 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -310,8 +311,9 @@ class DatabaseGUI:
             else:
                 limit = 1000
             
-            # Ask about overwrite
-            overwrite = input("Overwrite existing files? (y/N): ").strip().lower() == 'y'
+            # Ask about overwrite (default: yes)
+            overwrite_input = input("Overwrite existing files? (Y/n): ").strip().lower()
+            overwrite = overwrite_input != 'n'  # Default to True unless user explicitly says 'n'
             
             print(f"\n🔄 Exporting data to separate CSV files...")
             
@@ -361,8 +363,9 @@ class DatabaseGUI:
             else:
                 limit = 1000
             
-            # Ask about overwrite
-            overwrite = input("Overwrite existing files? (y/N): ").strip().lower() == 'y'
+            # Ask about overwrite (default: yes)
+            overwrite_input = input("Overwrite existing files? (Y/n): ").strip().lower()
+            overwrite = overwrite_input != 'n'  # Default to True unless user explicitly says 'n'
             
             print(f"\n🔄 Exporting data to separate JSON files...")
             
@@ -403,8 +406,9 @@ class DatabaseGUI:
             if not filename.endswith('.json'):
                 filename += '.json'
             
-            # Ask about overwrite
-            overwrite = input("Overwrite existing file? (y/N): ").strip().lower() == 'y'
+            # Ask about overwrite (default: yes)
+            overwrite_input = input("Overwrite existing file? (Y/n): ").strip().lower()
+            overwrite = overwrite_input != 'n'  # Default to True unless user explicitly says 'n'
             if not overwrite and not filename.startswith('export_'):
                 # Add timestamp if not overwriting and not already timestamped
                 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
