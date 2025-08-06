@@ -108,14 +108,14 @@ ac_management/
 ## 🚀 Cài đặt và sử dụng
 
 ### Yêu cầu hệ thống
-- **Python**: 3.7+
+- **Python**: 3.9+
 - **Dependencies**: pyserial, tabulate, pandas
 - **OS**: Linux, macOS, Windows
 - **Phần cứng**: PZEM-004T + USB-to-Serial adapter (PL2303, CH340, CP210, FTDI)
 
 ### Cài đặt
 ```bash
-git clone <repository-url>
+git clone https://github.com/levanduy093-work/ac_management.git
 cd ac_management
 pip install -r requirements.txt
 ```
@@ -240,17 +240,7 @@ python tools/reset_energy_no_address_change.py
 - [ ] Mobile app companion
 - [ ] Advanced analytics và machine learning
 - [ ] Multi-site monitoring
-- [ ] Cloud integration (AWS IoT, Azure IoT)
-- [ ] GUI application với tkinter/PyQt
-- [ ] Automated testing suite
-- [ ] Docker containerization
 
-### Cải thiện cấu trúc
-- [ ] Examples directory với các ví dụ sử dụng
-- [ ] Setup script cho cài đặt thư viện
-- [ ] Unit tests và integration tests
-- [ ] CI/CD pipeline
-- [ ] Code coverage reporting
 
 ## 📄 License
 
@@ -268,9 +258,8 @@ Chúng tôi hoan nghênh mọi đóng góp! Vui lòng:
 
 ## 📞 Liên hệ
 
-- **Email**: [your-email@example.com]
-- **GitHub**: [your-github-username]
-- **Website**: [your-website.com]
+- **Email**: [levanduy.work@gmail.com]
+- **GitHub**: [levanduy093-work]
 
 ---
 
