@@ -699,10 +699,9 @@ def main():
     print("🔌 PZEM-004T Database GUI Tool")
     print("=" * 50)
     
-    # Get database path
-    db_path = input("Enter database path (default: data/pzem_data.db): ").strip()
-    if not db_path:
-        db_path = "data/pzem_data.db"
+    # Use default database path
+    db_path = "data/pzem_data.db"
+    print(f"💾 Using database: {db_path}")
     
     # Create and run GUI
     gui = DatabaseGUI(db_path)
