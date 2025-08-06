@@ -207,12 +207,8 @@ class DatabaseGUI:
             csv_dir = "data/csv_log"
             os.makedirs(csv_dir, exist_ok=True)
             
-            # Get export parameters
-            filename = input(f"Enter output filename (default: export.csv): ").strip()
-            if not filename:
-                filename = "export.csv"
-            if not filename.endswith('.csv'):
-                filename += '.csv'
+            # Always use default filename
+            filename = "export.csv"
             
             # Always overwrite by default
             overwrite = True
@@ -220,38 +216,15 @@ class DatabaseGUI:
             # Add directory path
             filename = os.path.join(csv_dir, filename)
             
-            # Get port filter
-            port = input("Enter port to filter (e.g., /dev/ttyUSB0) or press Enter for all: ").strip()
-            if not port:
-                port = None
-            
-            # Get days filter
-            days = input("Enter number of days to look back (press Enter for all): ").strip()
-            if days:
-                try:
-                    days = int(days)
-                except ValueError:
-                    days = None
-            else:
-                days = None
-            
-            # Get limit
-            limit = input("Enter maximum records to export (press Enter for 1000): ").strip()
-            if limit:
-                try:
-                    limit = int(limit)
-                except ValueError:
-                    limit = 1000
-            else:
-                limit = 1000
+            # Always get all data from all ports
+            port = None
+            days = None
+            limit = None
             
             print(f"\n🔄 Exporting data...")
             
-            # Get data
-            if port:
-                data = self.db.get_measurements_by_port(port, limit)
-            else:
-                data = self.db.get_latest_measurements(limit)
+            # Get all data
+            data = self.db.get_latest_measurements(limit)
             
             if not data:
                 print("❌ No data found for export")
@@ -285,25 +258,9 @@ class DatabaseGUI:
         print("-" * 50)
         
         try:
-            # Get days filter
-            days = input("Enter number of days to look back (press Enter for all): ").strip()
-            if days:
-                try:
-                    days = int(days)
-                except ValueError:
-                    days = None
-            else:
-                days = None
-            
-            # Get limit
-            limit = input("Enter maximum records per port (press Enter for 1000): ").strip()
-            if limit:
-                try:
-                    limit = int(limit)
-                except ValueError:
-                    limit = 1000
-            else:
-                limit = 1000
+            # Always get all data
+            days = None
+            limit = None
             
             # Always overwrite by default
             overwrite = True
@@ -336,25 +293,9 @@ class DatabaseGUI:
         print("-" * 50)
         
         try:
-            # Get days filter
-            days = input("Enter number of days to look back (press Enter for all): ").strip()
-            if days:
-                try:
-                    days = int(days)
-                except ValueError:
-                    days = None
-            else:
-                days = None
-            
-            # Get limit
-            limit = input("Enter maximum records per port (press Enter for 1000): ").strip()
-            if limit:
-                try:
-                    limit = int(limit)
-                except ValueError:
-                    limit = 1000
-            else:
-                limit = 1000
+            # Always get all data
+            days = None
+            limit = None
             
             # Always overwrite by default
             overwrite = True
@@ -391,12 +332,8 @@ class DatabaseGUI:
             json_dir = "data/json_log"
             os.makedirs(json_dir, exist_ok=True)
             
-            # Get export parameters
-            filename = input(f"Enter output filename (default: export.json): ").strip()
-            if not filename:
-                filename = "export.json"
-            if not filename.endswith('.json'):
-                filename += '.json'
+            # Always use default filename
+            filename = "export.json"
             
             # Always overwrite by default
             overwrite = True
@@ -404,38 +341,15 @@ class DatabaseGUI:
             # Add directory path
             filename = os.path.join(json_dir, filename)
             
-            # Get port filter
-            port = input("Enter port to filter (e.g., /dev/ttyUSB0) or press Enter for all: ").strip()
-            if not port:
-                port = None
-            
-            # Get days filter
-            days = input("Enter number of days to look back (press Enter for all): ").strip()
-            if days:
-                try:
-                    days = int(days)
-                except ValueError:
-                    days = None
-            else:
-                days = None
-            
-            # Get limit
-            limit = input("Enter maximum records to export (press Enter for 1000): ").strip()
-            if limit:
-                try:
-                    limit = int(limit)
-                except ValueError:
-                    limit = 1000
-            else:
-                limit = 1000
+            # Always get all data from all ports
+            port = None
+            days = None
+            limit = None
             
             print(f"\n🔄 Exporting data...")
             
-            # Get data
-            if port:
-                data = self.db.get_measurements_by_port(port, limit)
-            else:
-                data = self.db.get_latest_measurements(limit)
+            # Get all data
+            data = self.db.get_latest_measurements(limit)
             
             if not data:
                 print("❌ No data found for export")
