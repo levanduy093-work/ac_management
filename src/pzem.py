@@ -520,33 +520,48 @@ class PZEM004T:
             
             logging.debug(f"Reset energy command: {packet.hex()}")
             
-            # Send command
-            self.serial.write(packet)
+            # Send command multiple times to ensure it's received
+            for attempt in range(3):
+                self.serial.write(packet)
+                time.sleep(0.05)  # Short delay between attempts
             
             # The device may not send a response to the reset command.
             # A small delay to allow the command to be processed.
-            time.sleep(0.1)
+            time.sleep(0.2)
             
             # Clear cached energy value
             self._measurements['energy'] = 0.0
             
             # Verify reset by reading energy value
             if verify_reset and energy_before is not None:
-                time.sleep(0.5)  # Wait for device to update
-                measurements = self.get_all_measurements()
-                if measurements:
-                    energy_after = measurements['energy']
-                    logging.debug(f"Energy after reset: {energy_after:.3f} kWh")
-                    
-                    if energy_after < energy_before:
-                        logging.info(f"Reset verified: Energy decreased from {energy_before:.3f} to {energy_after:.3f} kWh")
-                        return True
-                    elif energy_after == 0.0:
-                        logging.info("Reset verified: Energy is now 0.0 kWh")
-                        return True
+                time.sleep(0.8)  # Wait longer for device to update
+                
+                # Try multiple times to read the updated value
+                for verify_attempt in range(3):
+                    measurements = self.get_all_measurements()
+                    if measurements:
+                        energy_after = measurements['energy']
+                        logging.debug(f"Energy after reset (attempt {verify_attempt + 1}): {energy_after:.3f} kWh")
+                        
+                        if energy_after < energy_before:
+                            logging.info(f"Reset verified: Energy decreased from {energy_before:.3f} to {energy_after:.3f} kWh")
+                            return True
+                        elif energy_after == 0.0:
+                            logging.info("Reset verified: Energy is now 0.0 kWh")
+                            return True
+                        elif verify_attempt < 2:  # Try again if not the last attempt
+                            time.sleep(0.3)
+                            continue
+                        else:
+                            logging.warning(f"Reset may have failed: Energy is {energy_after:.3f} kWh (was {energy_before:.3f} kWh)")
+                            return False
                     else:
-                        logging.warning(f"Reset may have failed: Energy is {energy_after:.3f} kWh (was {energy_before:.3f} kWh)")
-                        return False
+                        if verify_attempt < 2:
+                            time.sleep(0.3)
+                            continue
+                        else:
+                            logging.warning("Could not read energy value after reset")
+                            return False
             
             # Assuming success as there's no direct confirmation
             return True

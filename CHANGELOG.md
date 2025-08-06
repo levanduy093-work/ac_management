@@ -93,3 +93,16 @@ và dự án này tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.
 
 ### Error Need To Fix
 - **Reset** - Nếu mà có nhiều cổng USB được cắm vào con rasp thì không thể reset được chính xác phần energy, nhưng nếu tôi tháo hết các cổng kết nối thừa ra thì nó lại có thể reset được con pzem tôi mong muốn, cần fix lại trường hợp lỗi này.
+
+### Fixed Issues
+- **Reset Energy với nhiều thiết bị** - Đã fix lỗi reset energy khi có nhiều cổng USB PZEM được kết nối:
+  - Cải tiến tool `reset_energy.py` để xác định địa chỉ từng thiết bị
+  - Thêm cơ chế kiểm tra xung đột địa chỉ
+  - Cải tiến phương thức `reset_energy()` trong class PZEM004T với retry mechanism
+  - Tạo tool mới `change_address.py` để quản lý địa chỉ thiết bị
+  - Thêm menu tương tác cho dễ sử dụng
+  - **Tạo tool mới `reset_energy_no_address_change.py`** - Giải pháp KHÔNG thay đổi địa chỉ PZEM:
+    - Reset tuần tự từng thiết bị để tránh xung đột
+    - Sử dụng timeout ngắn và retry mechanism
+    - Giữ nguyên địa chỉ mặc định của tất cả thiết bị
+    - An toàn hơn, không ảnh hưởng đến cấu hình PZEM

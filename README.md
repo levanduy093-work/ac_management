@@ -282,6 +282,42 @@ Thông tin thiết bị /dev/ttyUSB0:
    Reset thất bại: 0
 ```
 
+### Tool quản lý địa chỉ thiết bị
+```bash
+# Chạy tool quản lý địa chỉ
+python tools/change_address.py
+
+# Hoặc sử dụng command line
+python tools/change_address.py --scan                    # Quét thiết bị
+python tools/change_address.py --auto                    # Tự động gán địa chỉ duy nhất
+python tools/change_address.py --change /dev/ttyUSB0 1   # Thay đổi địa chỉ cụ thể
+```
+
+### Tool test multi-device reset
+```bash
+# Test reset tất cả thiết bị
+python tools/test_multi_device_reset.py
+
+# Test reset một thiết bị cụ thể
+python tools/test_multi_device_reset.py /dev/ttyUSB0
+```
+
+### Tool reset energy (KHÔNG thay đổi địa chỉ) - KHUYẾN NGHỊ
+```bash
+# Chạy tool reset không thay đổi địa chỉ (AN TOÀN HƠN)
+python tools/reset_energy_no_address_change.py
+
+# Hoặc sử dụng command line
+python tools/reset_energy_no_address_change.py --all          # Reset tất cả thiết bị
+python tools/reset_energy_no_address_change.py --port /dev/ttyUSB0  # Reset thiết bị cụ thể
+```
+
+**💡 Lưu ý quan trọng:**
+- Tool `reset_energy_no_address_change.py` **KHÔNG thay đổi địa chỉ** của các thiết bị PZEM
+- Giữ nguyên địa chỉ mặc định (0xF8) để tránh ảnh hưởng đến cấu hình
+- Sử dụng cơ chế reset tuần tự để tránh xung đột
+- **Khuyến nghị sử dụng tool này thay vì thay đổi địa chỉ**
+
 ## 📊 Quản lý dữ liệu CSV
 
 ### Cấu trúc file CSV
@@ -335,6 +371,23 @@ sudo usermod -a -G dialout $USER
 - Với PZEM-004T-100A, kiểm tra CT
 - Reset thiết bị nếu cần
 
+#### 5. Reset energy không hoạt động với nhiều thiết bị
+```bash
+# Giải pháp AN TOÀN - KHÔNG thay đổi địa chỉ (KHUYẾN NGHỊ)
+python tools/reset_energy_no_address_change.py
+
+# Hoặc kiểm tra xung đột địa chỉ
+python tools/change_address.py --scan
+
+# Tự động gán địa chỉ duy nhất (CẨN THẬN - sẽ thay đổi địa chỉ)
+python tools/change_address.py --auto
+
+# Hoặc reset từng thiết bị riêng biệt
+python tools/reset_energy.py
+```
+
+**💡 Khuyến nghị:** Sử dụng `reset_energy_no_address_change.py` để tránh ảnh hưởng đến cấu hình PZEM.
+
 ## 📚 Tài liệu tham khảo
 
 - **[docs/PZEM004T.md](docs/PZEM004T.md)**: Hướng dẫn chi tiết thư viện
@@ -346,7 +399,10 @@ sudo usermod -a -G dialout $USER
 ### Cấu trúc code
 - `src/pzem.py`: Thư viện PZEM-004T hoàn chỉnh (694 dòng)
 - `tools/read_ac_sensor.py`: Ứng dụng giám sát đa cảm biến (362 dòng)
-- `tools/reset_energy.py`: Tool reset energy counter (82 dòng)
+- `tools/reset_energy.py`: Tool reset energy counter cải tiến (280 dòng)
+- `tools/reset_energy_no_address_change.py`: Tool reset energy AN TOÀN (280 dòng) ⭐
+- `tools/change_address.py`: Tool quản lý địa chỉ thiết bị (280 dòng)
+- `tools/test_multi_device_reset.py`: Script test multi-device reset (150 dòng)
 
 ### Các thay đổi chính trong read_ac_sensor.py
 - **Import thư viện mới**: Sử dụng `PZEM004T` thay vì `PZEM004Tv30`

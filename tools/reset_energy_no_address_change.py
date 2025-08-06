@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
-Reset Energy Counter Tool for PZEM-004T Sensors
-===============================================
+Reset Energy Counter Tool for PZEM-004T Sensors (No Address Change)
+==================================================================
 
-Tool để reset bộ đếm năng lượng cho các cảm biến PZEM-004T.
-Hỗ trợ reset cho nhiều thiết bị cùng lúc với xác nhận người dùng.
+Tool để reset bộ đếm năng lượng cho các cảm biến PZEM-004T mà KHÔNG thay đổi địa chỉ.
+Giải pháp này sử dụng cơ chế reset tuần tự và cô lập từng thiết bị để tránh xung đột.
 
 Tính năng:
 - Tự động phát hiện các thiết bị PZEM-004T
-- Xác định địa chỉ của từng thiết bị
-- Reset bộ đếm năng lượng cho từng thiết bị riêng biệt
+- Reset bộ đếm năng lượng cho từng thiết bị tuần tự
+- KHÔNG thay đổi địa chỉ thiết bị
 - Xác nhận trước khi reset
 - Hiển thị trạng thái reset
 - Hỗ trợ nhiều loại USB-to-Serial adapter
@@ -26,22 +26,20 @@ from pzem import PZEM004T
 def find_pzem_ports():
     """
     Quét và trả về danh sách các cổng nối tiếp có vẻ như được kết nối với
-    cảm biến PZEM-004t thông qua bộ chuyển đổi USB-to-Serial (như PL2303, CH340, v.v.).
+    cảm biến PZEM-004t thông qua bộ chuyển đổi USB-to-Serial.
     """
     pzem_ports = []
     ports = serial.tools.list_ports.comports()
     for port in ports:
-        # Kiểm tra không phân biệt chữ hoa chữ thường và tổng quát hơn.
         desc_lower = port.description.lower() if port.description else ""
         device_lower = port.device.lower()
         hwid_lower = port.hwid.lower() if port.hwid else ""
 
-        # Thêm các từ khóa khác nếu bộ chuyển đổi của bạn có mô tả khác
         keywords = ["pl2303", "usb-serial", "usb serial", "ch340"]
         
         if any(keyword in desc_lower for keyword in keywords) or \
            any(keyword in device_lower for keyword in keywords) or \
-           "vid:067b" in hwid_lower:  # Kiểm tra Prolific Vendor ID
+           "vid:067b" in hwid_lower:
             pzem_ports.append(port.device)
             
     return pzem_ports
@@ -73,17 +71,18 @@ def get_pzem_info(port):
         if pzem:
             pzem.close()
 
-def reset_pzem_energy_specific(port, target_address=None):
+def reset_pzem_isolated(port, target_address=None):
     """
-    Reset năng lượng cho thiết bị PZEM cụ thể trên một cổng với địa chỉ xác định.
+    Reset năng lượng cho thiết bị PZEM với cơ chế cô lập.
+    Sử dụng timeout ngắn và retry để tránh xung đột với thiết bị khác.
     """
     pzem = None
     try:
-        # Kết nối với địa chỉ cụ thể nếu được chỉ định
+        # Kết nối với timeout ngắn để tránh xung đột
         if target_address is not None:
-            pzem = PZEM004T(port=port, address=target_address, timeout=2.0)
+            pzem = PZEM004T(port=port, address=target_address, timeout=1.0)
         else:
-            pzem = PZEM004T(port=port, timeout=2.0)
+            pzem = PZEM004T(port=port, timeout=1.0)
         
         # Đọc năng lượng trước khi reset
         measurements_before = pzem.get_all_measurements()
@@ -91,23 +90,36 @@ def reset_pzem_energy_specific(port, target_address=None):
         
         print(f"  Năng lượng trước reset: {energy_before:.3f} kWh")
         
-        # Thực hiện reset
-        if pzem.reset_energy(verify_reset=True):
-            # Đọc lại năng lượng sau reset
-            time.sleep(0.5)  # Đợi thiết bị cập nhật
-            measurements_after = pzem.get_all_measurements()
-            energy_after = measurements_after.get('energy', 0.0) if measurements_after else 0.0
-            
-            print(f"  Năng lượng sau reset: {energy_after:.3f} kWh")
-            
-            if energy_after < energy_before or energy_after == 0.0:
-                print(f"✅ Đã reset thành công bộ đếm năng lượng trên {port} (địa chỉ: {pzem.address})")
-                return True
-            else:
-                print(f"❌ Reset có thể thất bại trên {port} (địa chỉ: {pzem.address})")
-                return False
+        # Thực hiện reset với retry mechanism
+        success = False
+        for attempt in range(3):
+            try:
+                if pzem.reset_energy(verify_reset=False):  # Không verify ngay để tránh xung đột
+                    success = True
+                    break
+                time.sleep(0.2)  # Đợi ngắn giữa các lần thử
+            except Exception as e:
+                print(f"    Lần thử {attempt + 1} thất bại: {e}")
+                time.sleep(0.3)
+        
+        if not success:
+            print(f"❌ Không thể reset sau 3 lần thử trên {port}")
+            return False
+        
+        # Đợi lâu hơn trước khi đọc lại để tránh xung đột
+        time.sleep(1.0)
+        
+        # Đọc lại năng lượng sau reset
+        measurements_after = pzem.get_all_measurements()
+        energy_after = measurements_after.get('energy', 0.0) if measurements_after else 0.0
+        
+        print(f"  Năng lượng sau reset: {energy_after:.3f} kWh")
+        
+        if energy_after < energy_before or energy_after == 0.0:
+            print(f"✅ Đã reset thành công bộ đếm năng lượng trên {port} (địa chỉ: {pzem.address})")
+            return True
         else:
-            print(f"❌ Không thể reset bộ đếm năng lượng trên {port}")
+            print(f"❌ Reset có thể thất bại trên {port} (địa chỉ: {pzem.address})")
             return False
             
     except Exception as e:
@@ -117,9 +129,9 @@ def reset_pzem_energy_specific(port, target_address=None):
         if pzem:
             pzem.close()
 
-def reset_all_pzems():
+def reset_all_pzems_sequential():
     """
-    Reset tất cả các thiết bị PZEM được phát hiện.
+    Reset tất cả các thiết bị PZEM theo thứ tự tuần tự để tránh xung đột.
     """
     print("Đang tìm kiếm cảm biến PZEM-004T...")
     detected_ports = find_pzem_ports()
@@ -154,19 +166,26 @@ def reset_all_pzems():
     duplicate_addresses = [addr for addr in set(addresses) if addresses.count(addr) > 1]
     
     if duplicate_addresses:
-        print(f"\n⚠️  Cảnh báo: Phát hiện xung đột địa chỉ: {duplicate_addresses}")
-        print("Các thiết bị có cùng địa chỉ có thể gây ra vấn đề khi reset.")
-        print("Đề xuất: Thay đổi địa chỉ của các thiết bị để tránh xung đột.")
+        print(f"\n⚠️  Phát hiện xung đột địa chỉ: {duplicate_addresses}")
+        print("Các thiết bị có cùng địa chỉ sẽ được reset tuần tự để tránh xung đột.")
+        print("Lưu ý: KHÔNG thay đổi địa chỉ thiết bị để tránh ảnh hưởng đến cấu hình.")
         
-        # Thử reset từng thiết bị riêng biệt
-        print("\nThử reset từng thiết bị riêng biệt...")
+        # Reset tuần tự với thời gian chờ dài hơn
+        print("\n🔄 Thực hiện reset tuần tự...")
         success_count = 0
         
-        for device in devices_info:
-            print(f"\n--- Reset thiết bị trên {device['port']} (địa chỉ: {device['address']}) ---")
-            if reset_pzem_energy_specific(device['port'], device['address']):
+        for i, device in enumerate(devices_info, 1):
+            print(f"\n--- [{i}/{len(devices_info)}] Reset thiết bị trên {device['port']} (địa chỉ: {device['address']}) ---")
+            if reset_pzem_isolated(device['port'], device['address']):
                 success_count += 1
-            time.sleep(1.0)  # Đợi lâu hơn giữa các thiết bị
+            
+            # Đợi lâu hơn giữa các thiết bị có cùng địa chỉ
+            if device['address'] in duplicate_addresses:
+                print(f"  ⏳ Đợi 2 giây trước khi reset thiết bị tiếp theo...")
+                time.sleep(2.0)
+            else:
+                print(f"  ⏳ Đợi 1 giây trước khi reset thiết bị tiếp theo...")
+                time.sleep(1.0)
         
         print(f"\n📊 Kết quả: {success_count}/{len(devices_info)} thiết bị được reset thành công")
         
@@ -174,9 +193,9 @@ def reset_all_pzems():
         print("\n✅ Không có xung đột địa chỉ. Tiến hành reset tất cả thiết bị...")
         success_count = 0
         
-        for device in devices_info:
-            print(f"\n--- Reset thiết bị trên {device['port']} (địa chỉ: {device['address']}) ---")
-            if reset_pzem_energy_specific(device['port'], device['address']):
+        for i, device in enumerate(devices_info, 1):
+            print(f"\n--- [{i}/{len(devices_info)}] Reset thiết bị trên {device['port']} (địa chỉ: {device['address']}) ---")
+            if reset_pzem_isolated(device['port'], device['address']):
                 success_count += 1
             time.sleep(0.5)  # Đợi ngắn hơn khi không có xung đột
         
@@ -206,34 +225,35 @@ def reset_single_pzem(port):
         return False
     
     # Thực hiện reset
-    return reset_pzem_energy_specific(port, address)
+    return reset_pzem_isolated(port, address)
 
 def interactive_menu():
     """
     Menu tương tác cho người dùng.
     """
     while True:
-        print("\n" + "="*50)
-        print("🔌 PZEM-004T Energy Reset Tool")
-        print("="*50)
+        print("\n" + "="*60)
+        print("🔌 PZEM-004T Energy Reset Tool (No Address Change)")
+        print("="*60)
         print("📋 Menu:")
         print("1. Reset tất cả thiết bị (có xác nhận)")
         print("2. Reset tất cả thiết bị (không xác nhận)")
         print("3. Reset từng thiết bị (xác nhận từng cái)")
         print("4. Quét lại thiết bị")
         print("5. Thoát")
+        print("\n💡 Lưu ý: Tool này KHÔNG thay đổi địa chỉ thiết bị!")
         
         choice = input("\nChọn tùy chọn (1-5): ").strip()
         
         if choice == '1':
             confirm = input("Bạn có chắc chắn muốn reset TẤT CẢ thiết bị? (y/N): ")
             if confirm.lower() == 'y':
-                reset_all_pzems()
+                reset_all_pzems_sequential()
             else:
                 print("Đã hủy reset.")
                 
         elif choice == '2':
-            reset_all_pzems()
+            reset_all_pzems_sequential()
             
         elif choice == '3':
             detected_ports = find_pzem_ports()
@@ -267,13 +287,13 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         # Chế độ command line
         if sys.argv[1] == "--all":
-            reset_all_pzems()
+            reset_all_pzems_sequential()
         elif sys.argv[1] == "--port" and len(sys.argv) > 2:
             reset_single_pzem(sys.argv[2])
         else:
             print("Sử dụng:")
-            print("  python reset_energy.py --all          # Reset tất cả thiết bị")
-            print("  python reset_energy.py --port PORT    # Reset thiết bị cụ thể")
+            print("  python reset_energy_no_address_change.py --all          # Reset tất cả thiết bị")
+            print("  python reset_energy_no_address_change.py --port PORT    # Reset thiết bị cụ thể")
     else:
         # Chế độ tương tác
-        interactive_menu()
+        interactive_menu() 
