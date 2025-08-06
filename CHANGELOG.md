@@ -2,6 +2,61 @@
 
 Tất cả các thay đổi quan trọng trong dự án này sẽ được ghi lại trong file này.
 
+## [2.1.0] - 2025-08-06
+
+### 🎉 Database & GUI Enhancement Release
+
+#### ✨ Added
+- **Database storage system** với SQLite database thay thế CSV
+- **Database module** (`src/database.py`) với API đầy đủ cho quản lý dữ liệu
+- **Database monitoring script** (`tools/read_ac_sensor_db.py`) cho hiệu suất tốt hơn
+- **Database query tool** (`tools/query_database.py`) với nhiều tùy chọn export
+- **GUI tool tương tác** (`tools/database_gui.py`) với menu-driven interface
+- **Export functionality** hỗ trợ CSV và JSON với overwrite options
+- **Database statistics** và sensor summary tracking
+- **Automatic cleanup** dữ liệu cũ trong database
+- **Makefile commands** cho database operations
+
+#### 🔄 Changed
+- **Cập nhật Makefile** (84 → 121 dòng) với database commands
+- **Cải thiện error handling** trong database operations
+- **Tối ưu export performance** với overwrite options
+- **GUI interface** thay thế command line cho database management
+- **Documentation updates** cho database features
+
+#### 🐛 Fixed
+- **Datatype mismatch** trong export functions
+- **NULL value handling** trong database queries
+- **Import path issues** trong GUI tool
+- **File overwrite logic** trong export tools
+
+#### 📚 Documentation
+- **docs/DATABASE.md** - Hướng dẫn database storage (389 dòng)
+- **README.md** - Cập nhật với database features (318 dòng)
+- **PROJECT_STRUCTURE.md** - Cập nhật cấu trúc dự án (256 dòng)
+- **docs/DATA_LOGGING.md** - Thêm database storage guide
+
+#### 🔧 Database Features
+- **SQLite database** với 2 bảng: `sensors` và `measurements`
+- **Automatic indexing** cho hiệu suất truy vấn tốt
+- **Foreign key relationships** giữa sensors và measurements
+- **Timestamp tracking** cho first_seen và last_seen
+- **Sensor management** với device address tracking
+
+#### 🖥️ GUI Features
+- **Menu-driven interface** không cần nhớ command line
+- **Database statistics** với real-time updates
+- **Export options** với overwrite controls
+- **Advanced queries** cho data analysis
+- **Cleanup tools** với confirmation dialogs
+
+#### 📊 Export Features
+- **Single file export** cho tất cả dữ liệu
+- **Separate files by port** cho từng cảm biến
+- **CSV and JSON formats** với proper encoding
+- **Overwrite options** (mặc định) hoặc timestamp files
+- **Filter by date range** và port selection
+
 ## [2.0.0] - 2025-08-05
 
 ### 🎉 Major Release - Complete Library Rewrite
@@ -98,7 +153,3 @@ và dự án này tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.
     - Reset tuần tự từng thiết bị để tránh xung đột
     - Sử dụng timeout ngắn và retry mechanism
     - Giữ nguyên địa chỉ mặc định của tất cả thiết bị
-    - An toàn hơn, không ảnh hưởng đến cấu hình PZEM
-    - Menu tương tác dễ sử dụng
-    - Báo cáo kết quả chi tiết
-  - Cải tiến phương thức `reset_energy()` trong class PZEM004T với retry mechanism

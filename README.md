@@ -14,7 +14,7 @@ Một hệ thống Python chuyên nghiệp để giám sát và ghi dữ liệu 
 
 ### 🔄 Cập nhật ứng dụng giám sát
 
-- **Sử dụng thư viện mới**: `read_ac_sensor.py` đã được cập nhật để sử dụng thư viện PZEM-004T mới
+- **Sử dụng thư viện mới**: `read_ac_sensor.py` và `read_ac_sensor_db.py` đã được cập nhật để sử dụng thư viện PZEM-004T mới
 - **Hiệu suất tốt hơn**: Sử dụng API `get_all_measurements()` thay vì `update_values()`
 - **Hỗ trợ adapter mở rộng**: Thêm hỗ trợ CP210, FTDI ngoài PL2303, CH340
 - **Cấu trúc code cải thiện**: Tách logic chính vào hàm `main()` để dễ bảo trì
@@ -69,7 +69,6 @@ Script sẽ đọc và hiển thị các thông số điện quan trọng từ m
 - ✅ **Cơ chế retry**: Tự động thử lại khi gặp lỗi kết nối
 - ✅ **Hỗ trợ adapter mở rộng**: PL2303, CH340, CP210, FTDI
 - ✅ **Cấu trúc code tối ưu**: Tách logic chính, dễ bảo trì và mở rộng
-- ✅ **Quản lý file size**: Tự động dọn dẹp file CSV khi quá lớn
 
 ### Ghi dữ liệu CSV
 - 📝 **File CSV riêng biệt**: Mỗi cảm biến có file CSV riêng với tên dựa trên cổng
@@ -85,6 +84,7 @@ Script sẽ đọc và hiển thị các thông số điện quan trọng từ m
 - 📊 **Thống kê chi tiết**: Theo dõi sensors và measurements
 - 🗑️ **Tự động dọn dẹp**: Xóa dữ liệu cũ tự động
 - 🔧 **Tool truy vấn**: `query_database.py` với nhiều tùy chọn xuất dữ liệu
+- 🖥️ **GUI Tool**: `database_gui.py` với giao diện tương tác dễ sử dụng
 
 ## 🗂️ Cấu trúc dự án
 
@@ -92,29 +92,29 @@ Script sẽ đọc và hiển thị các thông số điện quan trọng từ m
 ac_management/
 ├── src/                       # 📚 Thư viện chính
 │   ├── __init__.py           # Package initialization (17 dòng)
-│   └── pzem.py               # Thư viện PZEM-004T hoàn chỉnh (709 dòng)
+│   ├── pzem.py               # Thư viện PZEM-004T hoàn chỉnh (709 dòng)
+│   └── database.py           # Database module (356 dòng)
 ├── tools/                     # 🔧 Công cụ ứng dụng
 │   ├── __init__.py           # Package initialization (7 dòng)
 │   ├── read_ac_sensor.py     # Script giám sát đa cảm biến (CSV) (362 dòng)
-│   ├── read_ac_sensor_db.py  # Script giám sát đa cảm biến (Database) (MỚI)
-│   ├── query_database.py     # Tool truy vấn database (MỚI)
-│   ├── database_gui.py       # GUI tool tương tác (MỚI)
+│   ├── read_ac_sensor_db.py  # Script giám sát đa cảm biến (Database) (243 dòng)
+│   ├── query_database.py     # Tool truy vấn database (403 dòng)
+│   ├── database_gui.py       # GUI tool tương tác (618 dòng)
 │   └── reset_energy_no_address_change.py # Tool reset energy AN TOÀN (299 dòng)
 ├── docs/                      # 📋 Tài liệu
 │   ├── PZEM004T.md           # Hướng dẫn chi tiết thư viện (572 dòng)
 │   ├── DATA_LOGGING.md       # Hướng dẫn CSV logging (114 dòng)
-│   └── DATABASE.md           # Hướng dẫn database storage (MỚI)
+│   └── DATABASE.md           # Hướng dẫn database storage (389 dòng)
 ├── data/                      # 📊 Dữ liệu
-│   └── csv_logs/             # File CSV logs
-│       ├── pzem__dev_ttyUSB0.csv (49 dòng dữ liệu)
-│       ├── pzem__dev_ttyUSB1.csv (49 dòng dữ liệu)
-│       └── pzem__dev_ttyUSB2.csv (49 dòng dữ liệu)
-├── Makefile                   # 🛠️ Quản lý dự án (84 dòng)
+│   ├── csv_logs/             # File CSV logs
+│   ├── json_log/             # File JSON logs
+│   └── pzem_data.db          # SQLite database
+├── Makefile                   # 🛠️ Quản lý dự án (121 dòng)
 ├── requirements.txt           # 📦 Dependencies (4 dòng)
-├── CHANGELOG.md              # 📝 Lịch sử thay đổi (108 dòng)
+├── CHANGELOG.md              # 📝 Lịch sử thay đổi (104 dòng)
 ├── LICENSE                   # 📄 Giấy phép (22 dòng)
-├── README.md                 # 📖 Tài liệu chính (467 dòng)
-└── PROJECT_STRUCTURE.md      # 📋 Cấu trúc dự án (248 dòng)
+├── README.md                 # 📖 Tài liệu chính (318 dòng)
+└── PROJECT_STRUCTURE.md      # 📋 Cấu trúc dự án (256 dòng)
 ```
 
 ## 🚀 Cài đặt và sử dụng
@@ -178,20 +178,35 @@ make db-latest
 # Dọn dẹp dữ liệu cũ
 make db-cleanup
 
+# GUI Tool tương tác (khuyến nghị)
+make db-gui
+```
+
+### Xuất dữ liệu
+
+#### Command Line
+```bash
 # Xuất dữ liệu ra CSV (file đơn)
 python tools/query_database.py --export-csv export.csv --days 7
 
 # Xuất dữ liệu ra JSON (file đơn)
 python tools/query_database.py --export-json export.json --days 30
 
-# 🆕 Xuất dữ liệu theo port riêng biệt (CSV)
+# Xuất dữ liệu theo port riêng biệt (CSV)
 python tools/query_database.py --export-csv-separate --days 7
 
-# 🆕 Xuất dữ liệu theo port riêng biệt (JSON)
+# Xuất dữ liệu theo port riêng biệt (JSON)
 python tools/query_database.py --export-json-separate --days 30
 
-# 🆕 GUI Tool tương tác (khuyến nghị)
+# Không overwrite file cũ (tạo file mới với timestamp)
+python tools/query_database.py --export-csv-separate --no-overwrite --days 7
+```
+
+#### GUI Tool (Khuyến nghị)
+```bash
 make db-gui
+# Hoặc
+python tools/database_gui.py
 ```
 
 ## 📊 Quản lý dữ liệu CSV
@@ -266,7 +281,11 @@ python tools/reset_energy_no_address_change.py
 
 ### Cấu trúc code
 - `src/pzem.py`: Thư viện PZEM-004T hoàn chỉnh (709 dòng)
-- `tools/read_ac_sensor.py`: Ứng dụng giám sát đa cảm biến (362 dòng)
+- `src/database.py`: Database module (356 dòng)
+- `tools/read_ac_sensor.py`: Ứng dụng giám sát đa cảm biến (CSV) (362 dòng)
+- `tools/read_ac_sensor_db.py`: Ứng dụng giám sát đa cảm biến (Database) (243 dòng)
+- `tools/query_database.py`: Tool truy vấn database (403 dòng)
+- `tools/database_gui.py`: GUI tool tương tác (618 dòng)
 - `tools/reset_energy_no_address_change.py`: Tool reset energy AN TOÀN (299 dòng) ⭐
 
 ### Các thay đổi chính trong read_ac_sensor.py
@@ -292,7 +311,6 @@ python tools/reset_energy_no_address_change.py
 - [ ] Mobile app companion
 - [ ] Advanced analytics và machine learning
 - [ ] Multi-site monitoring
-
 
 ## 📄 License
 

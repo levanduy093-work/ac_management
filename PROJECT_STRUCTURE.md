@@ -10,25 +10,29 @@ Dự án AC Management là một hệ thống Python chuyên nghiệp để giá
 ac_management/
 ├── src/                       # 📚 Thư viện chính
 │   ├── __init__.py           # Package initialization (17 dòng)
-│   └── pzem.py               # Thư viện PZEM-004T hoàn chỉnh (709 dòng)
+│   ├── pzem.py               # Thư viện PZEM-004T hoàn chỉnh (709 dòng)
+│   └── database.py           # Database module (356 dòng)
 ├── tools/                     # 🔧 Công cụ ứng dụng
 │   ├── __init__.py           # Package initialization (7 dòng)
-│   ├── read_ac_sensor.py     # Script giám sát đa cảm biến (362 dòng)
+│   ├── read_ac_sensor.py     # Script giám sát đa cảm biến (CSV) (362 dòng)
+│   ├── read_ac_sensor_db.py  # Script giám sát đa cảm biến (Database) (243 dòng)
+│   ├── query_database.py     # Tool truy vấn database (403 dòng)
+│   ├── database_gui.py       # GUI tool tương tác (618 dòng)
 │   └── reset_energy_no_address_change.py # Tool reset energy AN TOÀN (299 dòng)
 ├── docs/                      # 📋 Tài liệu
 │   ├── PZEM004T.md           # Hướng dẫn chi tiết thư viện (572 dòng)
-│   └── DATA_LOGGING.md       # Hướng dẫn CSV logging (114 dòng)
+│   ├── DATA_LOGGING.md       # Hướng dẫn CSV logging (114 dòng)
+│   └── DATABASE.md           # Hướng dẫn database storage (389 dòng)
 ├── data/                      # 📊 Dữ liệu
-│   └── csv_logs/             # File CSV logs
-│       ├── pzem__dev_ttyUSB0.csv (49 dòng dữ liệu)
-│       ├── pzem__dev_ttyUSB1.csv (49 dòng dữ liệu)
-│       └── pzem__dev_ttyUSB2.csv (49 dòng dữ liệu)
-├── Makefile                   # 🛠️ Quản lý dự án (84 dòng)
+│   ├── csv_logs/             # File CSV logs
+│   ├── json_log/             # File JSON logs
+│   └── pzem_data.db          # SQLite database
+├── Makefile                   # 🛠️ Quản lý dự án (121 dòng)
 ├── requirements.txt           # 📦 Dependencies (4 dòng)
-├── CHANGELOG.md              # 📝 Lịch sử thay đổi (108 dòng)
+├── CHANGELOG.md              # 📝 Lịch sử thay đổi (104 dòng)
 ├── LICENSE                   # 📄 Giấy phép (22 dòng)
-├── README.md                 # 📖 Tài liệu chính (467 dòng)
-└── PROJECT_STRUCTURE.md      # 📋 File này (248 dòng)
+├── README.md                 # 📖 Tài liệu chính (318 dòng)
+└── PROJECT_STRUCTURE.md      # 📋 File này (256 dòng)
 ```
 
 ## Mô tả chi tiết
@@ -51,6 +55,14 @@ ac_management/
 - Hỗ trợ calibration và reset energy với verification
 - **Cải tiến reset energy** với retry mechanism và timeout thông minh
 
+#### `src/database.py` (356 dòng)
+- **Database module** cho SQLite database
+- Quản lý bảng `sensors` và `measurements`
+- API để lưu trữ và truy vấn dữ liệu PZEM-004T
+- Tự động tạo indexes cho hiệu suất tốt
+- Hỗ trợ cleanup dữ liệu cũ
+- Thống kê database chi tiết
+
 ### 🔧 Công cụ ứng dụng (`tools/`)
 
 #### `tools/__init__.py` (7 dòng)
@@ -58,7 +70,7 @@ ac_management/
 - Version: 2.0.0
 
 #### `tools/read_ac_sensor.py` (362 dòng)
-- **Script giám sát đa cảm biến** với tính năng nâng cao
+- **Script giám sát đa cảm biến với CSV storage**
 - Tự động phát hiện và kết nối với các thiết bị PZEM-004T
 - Hỗ trợ nhiều loại USB-to-Serial adapter: PL2303, CH340, CP210, FTDI
 - Đọc dữ liệu từ nhiều cảm biến cùng lúc với threading
@@ -66,6 +78,31 @@ ac_management/
 - Ghi dữ liệu CSV với timestamp và quản lý file size
 - Cơ chế retry và error handling toàn diện
 - Tính tổng công suất và năng lượng của tất cả cảm biến
+
+#### `tools/read_ac_sensor_db.py` (243 dòng)
+- **Script giám sát đa cảm biến với Database storage**
+- Tương tự `read_ac_sensor.py` nhưng lưu vào SQLite database
+- Sử dụng `database.py` module để quản lý dữ liệu
+- Hiệu suất tốt hơn cho dữ liệu lớn
+- Tự động quản lý sensors và measurements
+- Thống kê real-time từ database
+
+#### `tools/query_database.py` (403 dòng)
+- **Tool truy vấn database** với nhiều tùy chọn
+- Command line interface cho truy vấn dữ liệu
+- Export dữ liệu ra CSV và JSON
+- Hỗ trợ export single file và separate files by port
+- Tùy chọn overwrite hoặc tạo file mới với timestamp
+- Filter theo port, thời gian, số lượng records
+- Thống kê database và sensor summary
+
+#### `tools/database_gui.py` (618 dòng)
+- **GUI tool tương tác** cho quản lý database
+- Menu-driven interface dễ sử dụng
+- Xem thống kê database và sensor summary
+- Export dữ liệu với giao diện thân thiện
+- Advanced queries và cleanup tools
+- Không cần nhớ command line options
 
 #### `tools/reset_energy_no_address_change.py` (299 dòng)
 - **Tool reset energy counter AN TOÀN** - KHÔNG thay đổi địa chỉ PZEM
@@ -91,6 +128,13 @@ ac_management/
 - Quản lý dữ liệu và phân tích
 - Backup và dọn dẹp dữ liệu cũ
 
+#### `docs/DATABASE.md` (389 dòng)
+- **Hướng dẫn database storage** với SQLite
+- Cấu trúc database và schema
+- Sử dụng database tools và GUI
+- Migration từ CSV sang database
+- Quản lý và backup database
+
 ### 📊 Dữ liệu (`data/`)
 
 #### `data/csv_logs/`
@@ -99,158 +143,125 @@ ac_management/
 - Cấu trúc: datetime, port, voltage_v, current_a, power_w, energy_wh, frequency_hz, power_factor, alarm_status
 - Dữ liệu với timestamp chính xác và tất cả thông số đo
 
+#### `data/json_log/`
+- **File JSON logs** cho export dữ liệu
+- Tên file: `export.json` hoặc `pzem_{port_name}.json`
+- Format JSON với indent và UTF-8 encoding
+- Dữ liệu tương tự CSV nhưng dạng JSON
+
+#### `data/pzem_data.db`
+- **SQLite database** chính cho lưu trữ dữ liệu
+- Bảng `sensors`: thông tin cảm biến
+- Bảng `measurements`: dữ liệu đo
+- Indexes cho hiệu suất truy vấn tốt
+- Tự động quản lý và cleanup
+
 ### 🛠️ Quản lý dự án
 
-#### `Makefile` (84 dòng)
-- **Quản lý dự án** với các lệnh cài đặt, test, lint, format
-- Chạy các công cụ chính: `make run-monitor`, `make run-reset`
-- Documentation generation và project management
+#### `Makefile` (121 dòng)
+- **Quản lý dự án** với các commands tiện lợi
+- Install dependencies và development tools
+- Run monitoring scripts (CSV và Database)
+- Database operations (stats, sensors, cleanup)
+- Export data và GUI tools
+- Code quality (lint, format)
 
 #### `requirements.txt` (4 dòng)
-- **Dependencies**: pyserial, tabulate, pandas
-- Phiên bản tối thiểu cho Python 3.7+
+- **Dependencies** cần thiết:
+  - `pyserial`: Serial communication
+  - `tabulate`: Table formatting
+  - `pandas`: Data analysis
 
-### 📝 Tài liệu dự án
-
-#### `README.md` (467 dòng)
-- **Tài liệu chính** với tổng quan dự án chi tiết
-- Hướng dẫn cài đặt và sử dụng từng bước
-- Tính năng chi tiết và troubleshooting guide
-- Thông số kỹ thuật chính xác theo datasheet
-- Ví dụ sử dụng và giao diện output
-- **Hướng dẫn sử dụng tool reset energy AN TOÀN**
-
-#### `CHANGELOG.md` (108 dòng)
-- **Lịch sử thay đổi** theo format Keep a Changelog
-- Semantic Versioning với phiên bản 2.0.0 hiện tại
-- Chi tiết các thay đổi qua các phiên bản
-- **Ghi lại việc fix lỗi reset energy với nhiều thiết bị**
+#### `CHANGELOG.md` (104 dòng)
+- **Lịch sử thay đổi** chi tiết
+- Version 2.0.0: Complete library rewrite
+- Major features và bug fixes
+- Breaking changes và improvements
 
 #### `LICENSE` (22 dòng)
-- **Giấy phép MIT** với điều khoản sử dụng và phân phối
+- **MIT License** cho dự án
+- Cho phép sử dụng tự do với attribution
 
 ## Tính năng chính
 
-### Thư viện PZEM-004T
-- ✅ **Đọc đầy đủ dữ liệu**: Voltage, Current, Power, Energy, Frequency, Power Factor
-- ✅ **Thông số kỹ thuật chính xác**: Theo tài liệu PZEM-004T với độ chính xác ±0.5%
-- ✅ **Cấu hình thiết bị**: Set/Get power alarm threshold, change device address
-- ✅ **Điều khiển**: Reset energy counter, calibration (factory use)
-- ✅ **Xử lý lỗi**: CRC validation, Modbus error handling, retry mechanism
-- ✅ **Cache thông minh**: Tối ưu hiệu suất với cache dữ liệu (0.1s interval)
-- ✅ **API linh hoạt**: Đọc từng giá trị hoặc tất cả cùng lúc
-- ✅ **Quy tắc hiển thị**: Tuân thủ datasheet cho công suất và năng lượng
-- ✅ **Tương thích ngược**: Hỗ trợ cả tên class cũ và mới
-- ✅ **Cải tiến reset energy**: Retry mechanism và timeout thông minh
+### 🔌 Thư viện PZEM-004T
+- **Đọc đầy đủ dữ liệu**: Voltage, Current, Power, Energy, Frequency, Power Factor
+- **Cấu hình thiết bị**: Set/Get power alarm threshold, change device address
+- **Điều khiển**: Reset energy counter, calibration (factory use)
+- **Xử lý lỗi**: CRC validation, Modbus error handling, retry mechanism
+- **Cache thông minh**: Tối ưu hiệu suất với cache dữ liệu (0.1s interval)
+- **API linh hoạt**: Đọc từng giá trị hoặc tất cả cùng lúc
+- **Tương thích ngược**: Hỗ trợ cả tên class cũ và mới
 
-### Công cụ hỗ trợ
-- ✅ **Tool reset energy AN TOÀN**: `reset_energy_no_address_change.py` - KHÔNG thay đổi địa chỉ PZEM
-- ✅ **Hỗ trợ đa adapter**: PL2303, CH340, CP210, FTDI
-- ✅ **Error handling**: Timeout và retry mechanism
-- ✅ **Bảo mật**: Xác nhận trước khi reset
-- ✅ **Reset tuần tự**: Tránh xung đột khi có nhiều thiết bị cùng địa chỉ
+### 📊 Ứng dụng giám sát
+- **Tự động phát hiện cảm biến**: Quét và kết nối tự động với các thiết bị PZEM-004T
+- **Đa cảm biến**: Hỗ trợ đọc từ nhiều cảm biến cùng lúc với threading
+- **Hiển thị dạng bảng**: Dữ liệu từ tất cả cảm biến hiển thị trong bảng thống nhất
+- **Thông tin tổng hợp**: Tính tổng công suất và năng lượng của tất cả cảm biến
+- **Cơ chế retry**: Tự động thử lại khi gặp lỗi kết nối
+- **Hỗ trợ adapter mở rộng**: PL2303, CH340, CP210, FTDI
 
-### Ứng dụng giám sát đa cảm biến
-- ✅ **Tự động phát hiện cảm biến**: Quét và kết nối tự động với các thiết bị PZEM-004T
-- ✅ **Đa cảm biến**: Hỗ trợ đọc từ nhiều cảm biến cùng lúc với threading
-- ✅ **Hiển thị dạng bảng**: Dữ liệu từ tất cả cảm biến hiển thị trong bảng thống nhất
-- ✅ **Thông tin tổng hợp**: Tính tổng công suất và năng lượng của tất cả cảm biến
-- ✅ **Cơ chế retry**: Tự động thử lại khi gặp lỗi kết nối
-- ✅ **Hỗ trợ adapter mở rộng**: PL2303, CH340, CP210, FTDI
-- ✅ **Cấu trúc code tối ưu**: Tách logic chính, dễ bảo trì và mở rộng
-- ✅ **Quản lý file size**: Tự động dọn dẹp file CSV khi quá lớn
+### 💾 Lưu trữ dữ liệu
+- **CSV Storage**: File riêng biệt cho từng cảm biến
+- **Database Storage**: SQLite với hiệu suất cao và quản lý tốt
+- **Export Tools**: CSV và JSON với nhiều tùy chọn
+- **GUI Interface**: Tương tác dễ dàng không cần command line
 
-### Ghi dữ liệu CSV
-- 📝 **File CSV riêng biệt**: Mỗi cảm biến có file CSV riêng với tên dựa trên cổng
-- 🕐 **Timestamp chính xác**: Ghi thời gian đo với định dạng YYYY-MM-DD HH:MM:SS
-- 📊 **Dữ liệu đầy đủ**: Ghi tất cả thông số bao gồm datetime, port và các giá trị đo
-- 🗂️ **Tổ chức khoa học**: Dữ liệu được lưu trong thư mục `data/csv_logs/`
-- 📏 **Quản lý dung lượng**: Tự động dọn dẹp file khi vượt quá kích thước
-
-## Thông số kỹ thuật
-
-### Phần cứng được hỗ trợ
-- **Cảm biến**: PZEM-004T-10A (0-10A), PZEM-004T-100A (0-100A)
-- **USB-to-Serial adapter**: PL2303, CH340, CP210, FTDI
-- **Kết nối**: TTL interface với đầy đủ 4 chân (GND, TX, RX, 5V)
-
-### Thông số đo chính xác
-- **Voltage**: 80-260V, resolution 0.1V, accuracy ±0.5%
-- **Current**: 0-10A/0-100A, resolution 0.001A, accuracy ±0.5%
-- **Power**: 0-2.3kW/0-23kW, resolution 0.1W, accuracy ±0.5%
-- **Energy**: 0-9999.99kWh, resolution 1Wh, accuracy ±0.5%
-- **Frequency**: 45-65Hz, resolution 0.1Hz, accuracy ±0.5%
-- **Power Factor**: 0.00-1.00, resolution 0.01, accuracy ±1%
-
-### Quy tắc hiển thị theo datasheet
-- **Power**: <1000W hiển thị 1 chữ số thập phân, ≥1000W hiển thị số nguyên
-- **Energy**: <10kWh đơn vị Wh, ≥10kWh đơn vị kWh
-
-## Roadmap
-
-### Tính năng đang phát triển
-- [ ] Web interface với Flask/Django
-- [ ] Database integration (PostgreSQL, MySQL)
-- [ ] REST API endpoints
-- [ ] Mobile app companion
-- [ ] Advanced analytics và machine learning
-- [ ] Multi-site monitoring
-- [ ] Cloud integration (AWS IoT, Azure IoT)
-- [ ] GUI application với tkinter/PyQt
-- [ ] Automated testing suite
-- [ ] Docker containerization
-
-### Cải thiện cấu trúc
-- [ ] Examples directory với các ví dụ sử dụng
-- [ ] Setup script cho cài đặt thư viện
-- [ ] Unit tests và integration tests
-- [ ] CI/CD pipeline
-- [ ] Code coverage reporting
-
-## Yêu cầu hệ thống
-
-### Phần cứng
-- **Cảm biến**: PZEM-004T-10A hoặc PZEM-004T-100A
-- **USB-to-Serial adapter**: PL2303, CH340, CP210, FTDI
-- **Kết nối**: TTL interface với đầy đủ 4 chân (GND, TX, RX, 5V)
-
-### Phần mềm
-- **Python**: 3.7+
-- **Dependencies**: pyserial, tabulate, pandas
-- **OS**: Linux, macOS, Windows
+### 🔧 Công cụ hỗ trợ
+- **Reset Energy Tool**: AN TOÀN - không thay đổi địa chỉ PZEM
+- **Database Management**: Stats, cleanup, migration
+- **Export Tools**: Command line và GUI
+- **Error Handling**: Comprehensive error handling và retry mechanisms
 
 ## Cách sử dụng
 
 ### Cài đặt
 ```bash
-git clone <repository-url>
+git clone https://github.com/levanduy093-work/ac_management.git
 cd ac_management
 pip install -r requirements.txt
 ```
 
 ### Chạy giám sát
 ```bash
-python tools/read_ac_sensor.py
-# hoặc
+# CSV storage
 make run-monitor
+
+# Database storage (khuyến nghị)
+make run-monitor-db
 ```
 
-### Reset energy (AN TOÀN - KHUYẾN NGHỊ)
+### Quản lý database
 ```bash
-python tools/reset_energy_no_address_change.py
-# hoặc
+# GUI tool (khuyến nghị)
+make db-gui
+
+# Command line
+make db-stats
+make db-sensors
+make db-latest
+make db-cleanup
+```
+
+### Reset energy
+```bash
 make run-reset
 ```
 
-### Sử dụng thư viện
-```python
-from src.pzem import PZEM004T
+## Phát triển
 
-pzem = PZEM004T(port='/dev/ttyUSB0')
-measurements = pzem.get_all_measurements()
-print(f"Power: {measurements['power']:.1f}W")
-```
+### Cấu trúc code
+- **Modular design**: Tách biệt thư viện, tools, và documentation
+- **Error handling**: Comprehensive error handling trong tất cả modules
+- **Documentation**: Detailed documentation cho tất cả components
+- **Testing**: Ready for unit tests và integration tests
 
----
+### Contributing
+- Fork dự án
+- Tạo feature branch
+- Commit changes với descriptive messages
+- Push và tạo Pull Request
 
-**Lưu ý**: Cấu trúc này được cập nhật lần cuối vào tháng 8/2025 và phản ánh trạng thái hiện tại của dự án với phiên bản 2.0.0. Tool reset energy đã được tối ưu để không thay đổi địa chỉ PZEM, đảm bảo an toàn và dễ sử dụng. 
+## License
+
+MIT License - xem file [LICENSE](LICENSE) để biết thêm chi tiết. 
