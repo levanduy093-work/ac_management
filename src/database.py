@@ -195,13 +195,13 @@ class PZEMDatabase:
                 {
                     'port': row[0],
                     'timestamp': row[1],
-                    'voltage': row[2],
-                    'current': row[3],
-                    'power': row[4],
-                    'energy': row[5],
-                    'frequency': row[6],
-                    'power_factor': row[7],
-                    'alarm_status': bool(row[8])
+                    'voltage': row[2] if row[2] is not None else 0.0,
+                    'current': row[3] if row[3] is not None else 0.0,
+                    'power': row[4] if row[4] is not None else 0.0,
+                    'energy': row[5] if row[5] is not None else 0.0,
+                    'frequency': row[6] if row[6] is not None else 0.0,
+                    'power_factor': row[7] if row[7] is not None else 0.0,
+                    'alarm_status': bool(row[8]) if row[8] is not None else False
                 }
                 for row in results
             ]
@@ -262,6 +262,7 @@ class PZEMDatabase:
             
             cursor.execute('''
                 SELECT 
+                    s.port,
                     m.timestamp,
                     m.voltage,
                     m.current,
@@ -281,14 +282,15 @@ class PZEMDatabase:
             
             return [
                 {
-                    'timestamp': row[0],
-                    'voltage': row[1],
-                    'current': row[2],
-                    'power': row[3],
-                    'energy': row[4],
-                    'frequency': row[5],
-                    'power_factor': row[6],
-                    'alarm_status': bool(row[7])
+                    'port': row[0],
+                    'timestamp': row[1],
+                    'voltage': row[2] if row[2] is not None else 0.0,
+                    'current': row[3] if row[3] is not None else 0.0,
+                    'power': row[4] if row[4] is not None else 0.0,
+                    'energy': row[5] if row[5] is not None else 0.0,
+                    'frequency': row[6] if row[6] is not None else 0.0,
+                    'power_factor': row[7] if row[7] is not None else 0.0,
+                    'alarm_status': bool(row[8]) if row[8] is not None else False
                 }
                 for row in results
             ]

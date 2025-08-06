@@ -223,27 +223,17 @@ class DatabaseGUI:
             
             print(f"\n🔄 Exporting data...")
             
-            # Get all data
-            data = self.db.get_latest_measurements(limit)
+            # Import the export function from query_database
+            sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+            from query_database import export_to_csv
             
-            if not data:
-                print("❌ No data found for export")
-                input("\nPress Enter to continue...")
-                return
+            # Call the export function
+            success = export_to_csv(self.db, filename, port, days, limit, separate_by_port=False, overwrite=overwrite)
             
-            # Filter by days if specified
-            if days:
-                cutoff_date = datetime.now() - timedelta(days=days)
-                data = [row for row in data if datetime.strptime(row['timestamp'], '%Y-%m-%d %H:%M:%S') >= cutoff_date]
-            
-            # Write to CSV
-            with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
-                fieldnames = ['timestamp', 'port', 'voltage', 'current', 'power', 'energy', 'frequency', 'power_factor', 'alarm_status']
-                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-                writer.writeheader()
-                writer.writerows(data)
-            
-            print(f"✅ Successfully exported {len(data)} records to {filename}")
+            if success:
+                print(f"✅ Successfully exported data to {filename}")
+            else:
+                print(f"❌ Export failed!")
             
         except Exception as e:
             print(f"❌ Error exporting to CSV: {e}")
@@ -348,24 +338,17 @@ class DatabaseGUI:
             
             print(f"\n🔄 Exporting data...")
             
-            # Get all data
-            data = self.db.get_latest_measurements(limit)
+            # Import the export function from query_database
+            sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+            from query_database import export_to_json
             
-            if not data:
-                print("❌ No data found for export")
-                input("\nPress Enter to continue...")
-                return
+            # Call the export function
+            success = export_to_json(self.db, filename, port, days, limit, separate_by_port=False, overwrite=overwrite)
             
-            # Filter by days if specified
-            if days:
-                cutoff_date = datetime.now() - timedelta(days=days)
-                data = [row for row in data if datetime.strptime(row['timestamp'], '%Y-%m-%d %H:%M:%S') >= cutoff_date]
-            
-            # Write to JSON
-            with open(filename, 'w', encoding='utf-8') as jsonfile:
-                json.dump(data, jsonfile, indent=2, ensure_ascii=False)
-            
-            print(f"✅ Successfully exported {len(data)} records to {filename}")
+            if success:
+                print(f"✅ Successfully exported data to {filename}")
+            else:
+                print(f"❌ Export failed!")
             
         except Exception as e:
             print(f"❌ Error exporting to JSON: {e}")
