@@ -15,7 +15,7 @@ import json
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 from database import PZEMDatabase
 
-def export_to_csv(db, output_file=None, port=None, days=None, limit=None, separate_by_port=False):
+def export_to_csv(db, output_file=None, port=None, days=None, limit=None, separate_by_port=False, overwrite=False):
     """
     Export data to CSV file(s)
     
@@ -26,6 +26,7 @@ def export_to_csv(db, output_file=None, port=None, days=None, limit=None, separa
         days: Number of days to look back
         limit: Maximum number of records
         separate_by_port: If True, export each port to separate files
+        overwrite: If True, overwrite existing files instead of creating new ones with timestamp
     """
     try:
         # Create csv_log directory if it doesn't exist
@@ -42,9 +43,12 @@ def export_to_csv(db, output_file=None, port=None, days=None, limit=None, separa
                 # Clean port name for filename
                 port_clean = port_name.replace('/', '_').replace('\\', '_').replace(':', '_')
                 
-                # Generate filename with timestamp
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                filename = f"{csv_dir}/pzem_{port_clean}_{timestamp}.csv"
+                # Generate filename - use timestamp only if not overwriting
+                if overwrite:
+                    filename = f"{csv_dir}/pzem_{port_clean}.csv"
+                else:
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    filename = f"{csv_dir}/pzem_{port_clean}_{timestamp}.csv"
                 
                 # Get data for this port
                 data = db.get_measurements_by_port(port_name, limit or 1000)
@@ -78,8 +82,11 @@ def export_to_csv(db, output_file=None, port=None, days=None, limit=None, separa
         else:
             # Export to single file (original behavior)
             if not output_file:
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                output_file = f"{csv_dir}/export_{timestamp}.csv"
+                if overwrite:
+                    output_file = f"{csv_dir}/export.csv"
+                else:
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    output_file = f"{csv_dir}/export_{timestamp}.csv"
             
             if port:
                 data = db.get_measurements_by_port(port, limit or 1000)
@@ -109,7 +116,7 @@ def export_to_csv(db, output_file=None, port=None, days=None, limit=None, separa
         print(f"❌ Error exporting to CSV: {e}")
         return False
 
-def export_to_json(db, output_file=None, port=None, days=None, limit=None, separate_by_port=False):
+def export_to_json(db, output_file=None, port=None, days=None, limit=None, separate_by_port=False, overwrite=False):
     """
     Export data to JSON file(s)
     
@@ -120,6 +127,7 @@ def export_to_json(db, output_file=None, port=None, days=None, limit=None, separ
         days: Number of days to look back
         limit: Maximum number of records
         separate_by_port: If True, export each port to separate files
+        overwrite: If True, overwrite existing files instead of creating new ones with timestamp
     """
     try:
         # Create json_log directory if it doesn't exist
@@ -136,9 +144,12 @@ def export_to_json(db, output_file=None, port=None, days=None, limit=None, separ
                 # Clean port name for filename
                 port_clean = port_name.replace('/', '_').replace('\\', '_').replace(':', '_')
                 
-                # Generate filename with timestamp
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                filename = f"{json_dir}/pzem_{port_clean}_{timestamp}.json"
+                # Generate filename - use timestamp only if not overwriting
+                if overwrite:
+                    filename = f"{json_dir}/pzem_{port_clean}.json"
+                else:
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    filename = f"{json_dir}/pzem_{port_clean}_{timestamp}.json"
                 
                 # Get data for this port
                 data = db.get_measurements_by_port(port_name, limit or 1000)
@@ -169,8 +180,11 @@ def export_to_json(db, output_file=None, port=None, days=None, limit=None, separ
         else:
             # Export to single file (original behavior)
             if not output_file:
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                output_file = f"{json_dir}/export_{timestamp}.json"
+                if overwrite:
+                    output_file = f"{json_dir}/export.json"
+                else:
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    output_file = f"{json_dir}/export_{timestamp}.json"
             
             if port:
                 data = db.get_measurements_by_port(port, limit or 1000)
@@ -308,6 +322,9 @@ Examples:
   # Export each port to separate JSON files
   python query_database.py --export-json-separate --days 30
   
+  # Overwrite existing files instead of creating new ones with timestamp
+  python query_database.py --export-csv-separate --overwrite --days 7
+  
   # Clean up data older than 30 days
   python query_database.py --cleanup 30
         """
@@ -335,6 +352,8 @@ Examples:
                        help='Limit number of records to export')
     parser.add_argument('--cleanup', type=int, metavar='DAYS',
                        help='Clean up data older than N days')
+    parser.add_argument('--overwrite', action='store_true',
+                       help='Overwrite existing files instead of creating new ones with timestamp')
     parser.add_argument('--db-path', metavar='PATH',
                        default='data/pzem_data.db',
                        help='Database file path (default: data/pzem_data.db)')
@@ -366,16 +385,16 @@ Examples:
         show_latest_data(db, args.latest)
     
     if args.export_csv:
-        export_to_csv(db, args.export_csv, args.port, args.days, args.limit, separate_by_port=False)
+        export_to_csv(db, args.export_csv, args.port, args.days, args.limit, separate_by_port=False, overwrite=args.overwrite)
     
     if args.export_json:
-        export_to_json(db, args.export_json, args.port, args.days, args.limit, separate_by_port=False)
+        export_to_json(db, args.export_json, args.port, args.days, args.limit, separate_by_port=False, overwrite=args.overwrite)
     
     if args.export_csv_separate:
-        export_to_csv(db, None, args.port, args.days, args.limit, separate_by_port=True)
+        export_to_csv(db, None, args.port, args.days, args.limit, separate_by_port=True, overwrite=args.overwrite)
     
     if args.export_json_separate:
-        export_to_json(db, None, args.port, args.days, args.limit, separate_by_port=True)
+        export_to_json(db, None, args.port, args.days, args.limit, separate_by_port=True, overwrite=args.overwrite)
     
     if args.cleanup:
         cleanup_database(db, args.cleanup)

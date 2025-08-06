@@ -210,10 +210,17 @@ class DatabaseGUI:
             # Get export parameters
             filename = input(f"Enter output filename (default: export.csv): ").strip()
             if not filename:
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                filename = f"export_{timestamp}.csv"
+                filename = "export.csv"
             if not filename.endswith('.csv'):
                 filename += '.csv'
+            
+            # Ask about overwrite
+            overwrite = input("Overwrite existing file? (y/N): ").strip().lower() == 'y'
+            if not overwrite and not filename.startswith('export_'):
+                # Add timestamp if not overwriting and not already timestamped
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                base_name = filename[:-4]  # Remove .csv
+                filename = f"{base_name}_{timestamp}.csv"
             
             # Add directory path
             filename = os.path.join(csv_dir, filename)
@@ -303,6 +310,9 @@ class DatabaseGUI:
             else:
                 limit = 1000
             
+            # Ask about overwrite
+            overwrite = input("Overwrite existing files? (y/N): ").strip().lower() == 'y'
+            
             print(f"\n🔄 Exporting data to separate CSV files...")
             
             # Import the export function from query_database
@@ -310,7 +320,7 @@ class DatabaseGUI:
             from query_database import export_to_csv
             
             # Call the export function with separate_by_port=True
-            success = export_to_csv(self.db, None, None, days, limit, separate_by_port=True)
+            success = export_to_csv(self.db, None, None, days, limit, separate_by_port=True, overwrite=overwrite)
             
             if success:
                 print(f"✅ Export completed successfully!")
@@ -351,6 +361,9 @@ class DatabaseGUI:
             else:
                 limit = 1000
             
+            # Ask about overwrite
+            overwrite = input("Overwrite existing files? (y/N): ").strip().lower() == 'y'
+            
             print(f"\n🔄 Exporting data to separate JSON files...")
             
             # Import the export function from query_database
@@ -358,7 +371,7 @@ class DatabaseGUI:
             from query_database import export_to_json
             
             # Call the export function with separate_by_port=True
-            success = export_to_json(self.db, None, None, days, limit, separate_by_port=True)
+            success = export_to_json(self.db, None, None, days, limit, separate_by_port=True, overwrite=overwrite)
             
             if success:
                 print(f"✅ Export completed successfully!")
@@ -386,10 +399,17 @@ class DatabaseGUI:
             # Get export parameters
             filename = input(f"Enter output filename (default: export.json): ").strip()
             if not filename:
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                filename = f"export_{timestamp}.json"
+                filename = "export.json"
             if not filename.endswith('.json'):
                 filename += '.json'
+            
+            # Ask about overwrite
+            overwrite = input("Overwrite existing file? (y/N): ").strip().lower() == 'y'
+            if not overwrite and not filename.startswith('export_'):
+                # Add timestamp if not overwriting and not already timestamped
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                base_name = filename[:-5]  # Remove .json
+                filename = f"{base_name}_{timestamp}.json"
             
             # Add directory path
             filename = os.path.join(json_dir, filename)
