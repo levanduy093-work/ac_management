@@ -9,7 +9,7 @@ ac_management/
 ├── tools/                     # Công cụ ứng dụng
 │   ├── __init__.py
 │   ├── read_ac_sensor.py     # Script giám sát đa cảm biến
-│   └── reset_energy.py       # Tool reset energy
+│   └── reset_energy_no_address_change.py # Tool reset energy AN TOÀN
 ├── docs/                      # Tài liệu
 │   ├── PZEM004T.md           # Hướng dẫn thư viện
 │   └── DATA_LOGGING.md       # File này

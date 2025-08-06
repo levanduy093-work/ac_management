@@ -24,7 +24,6 @@ Tất cả các thay đổi quan trọng trong dự án này sẽ được ghi l
 #### 🔄 Changed
 - **Cải thiện reset energy** với approach đơn giản hơn, tương thích với nhiều thiết bị
 - **Cập nhật read_ac_sensor.py** sử dụng thư viện mới với hiệu suất tốt hơn (362 dòng)
-- **Cập nhật reset_energy.py** với giao diện đơn giản và xác nhận an toàn (82 dòng)
 - **Tổ chức lại cấu trúc file** theo chuẩn Python package
 - **Cập nhật thông số kỹ thuật** theo datasheet chính thức PZEM-004T
 - **Cải thiện hiển thị dữ liệu** theo quy tắc datasheet
@@ -38,9 +37,9 @@ Tất cả các thay đổi quan trọng trong dự án này sẽ được ghi l
 
 #### 📚 Documentation
 - **docs/PZEM004T.md** - Hướng dẫn chi tiết thư viện (572 dòng)
-- **README.md** - Cập nhật với cấu trúc mới và thông số kỹ thuật chính xác (407 dòng)
+- **README.md** - Cập nhật với cấu trúc mới và thông số kỹ thuật chính xác (467 dòng)
 - **docs/DATA_LOGGING.md** - Hướng dẫn CSV logging (114 dòng)
-- **PROJECT_STRUCTURE.md** - Tài liệu cấu trúc dự án chi tiết (227 dòng)
+- **PROJECT_STRUCTURE.md** - Tài liệu cấu trúc dự án chi tiết (248 dòng)
 
 #### 🔧 Technical Specifications Update
 - **Voltage**: 80-260V, resolution 0.1V, accuracy ±0.5%
@@ -90,19 +89,16 @@ và dự án này tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.
 - **Fixed** - Sửa lỗi
 - **Security** - Cải thiện bảo mật 
 
-
 ### Error Need To Fix
 - **Reset** - Nếu mà có nhiều cổng USB được cắm vào con rasp thì không thể reset được chính xác phần energy, nhưng nếu tôi tháo hết các cổng kết nối thừa ra thì nó lại có thể reset được con pzem tôi mong muốn, cần fix lại trường hợp lỗi này.
 
 ### Fixed Issues
 - **Reset Energy với nhiều thiết bị** - Đã fix lỗi reset energy khi có nhiều cổng USB PZEM được kết nối:
-  - Cải tiến tool `reset_energy.py` để xác định địa chỉ từng thiết bị
-  - Thêm cơ chế kiểm tra xung đột địa chỉ
-  - Cải tiến phương thức `reset_energy()` trong class PZEM004T với retry mechanism
-  - Tạo tool mới `change_address.py` để quản lý địa chỉ thiết bị
-  - Thêm menu tương tác cho dễ sử dụng
   - **Tạo tool mới `reset_energy_no_address_change.py`** - Giải pháp KHÔNG thay đổi địa chỉ PZEM:
     - Reset tuần tự từng thiết bị để tránh xung đột
     - Sử dụng timeout ngắn và retry mechanism
     - Giữ nguyên địa chỉ mặc định của tất cả thiết bị
     - An toàn hơn, không ảnh hưởng đến cấu hình PZEM
+    - Menu tương tác dễ sử dụng
+    - Báo cáo kết quả chi tiết
+  - Cải tiến phương thức `reset_energy()` trong class PZEM004T với retry mechanism

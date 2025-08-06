@@ -73,9 +73,9 @@ docs:
 run-monitor:
 	python tools/read_ac_sensor.py
 
-# Run the energy reset tool
+# Run the energy reset tool (AN TOÀN - KHÔNG thay đổi địa chỉ)
 run-reset:
-	python tools/reset_energy.py
+	python tools/reset_energy_no_address_change.py
 
 # Quick start
 quick-start: install

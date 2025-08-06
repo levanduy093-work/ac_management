@@ -55,10 +55,11 @@ Script sẽ đọc và hiển thị các thông số điện quan trọng từ m
 - ✅ **Tương thích ngược**: Hỗ trợ cả tên class cũ và mới
 
 ### Công cụ hỗ trợ
-- ✅ **Tool reset energy**: Tự động phát hiện, reset với báo cáo chi tiết
+- ✅ **Tool reset energy AN TOÀN**: `reset_energy_no_address_change.py` - KHÔNG thay đổi địa chỉ PZEM
 - ✅ **Hỗ trợ đa adapter**: PL2303, CH340, CP210, FTDI
 - ✅ **Error handling**: Timeout và retry mechanism
 - ✅ **Bảo mật**: Xác nhận trước khi reset
+- ✅ **Reset tuần tự**: Tránh xung đột khi có nhiều thiết bị cùng địa chỉ
 
 ### Ứng dụng giám sát đa cảm biến
 - ✅ **Tự động phát hiện cảm biến**: Quét và kết nối tự động với các thiết bị PZEM-004T
@@ -83,11 +84,11 @@ Script sẽ đọc và hiển thị các thông số điện quan trọng từ m
 ac_management/
 ├── src/                       # 📚 Thư viện chính
 │   ├── __init__.py           # Package initialization (17 dòng)
-│   └── pzem.py               # Thư viện PZEM-004T hoàn chỉnh (694 dòng)
+│   └── pzem.py               # Thư viện PZEM-004T hoàn chỉnh (709 dòng)
 ├── tools/                     # 🔧 Công cụ ứng dụng
 │   ├── __init__.py           # Package initialization (7 dòng)
 │   ├── read_ac_sensor.py     # Script giám sát đa cảm biến (362 dòng)
-│   └── reset_energy.py       # Tool reset energy counter (82 dòng)
+│   └── reset_energy_no_address_change.py # Tool reset energy AN TOÀN (299 dòng)
 ├── docs/                      # 📋 Tài liệu
 │   ├── PZEM004T.md           # Hướng dẫn chi tiết thư viện (572 dòng)
 │   └── DATA_LOGGING.md       # Hướng dẫn CSV logging (114 dòng)
@@ -98,211 +99,35 @@ ac_management/
 │       └── pzem__dev_ttyUSB2.csv (49 dòng dữ liệu)
 ├── Makefile                   # 🛠️ Quản lý dự án (84 dòng)
 ├── requirements.txt           # 📦 Dependencies (4 dòng)
-├── CHANGELOG.md              # 📝 Lịch sử thay đổi (82 dòng)
+├── CHANGELOG.md              # 📝 Lịch sử thay đổi (108 dòng)
 ├── LICENSE                   # 📄 Giấy phép (22 dòng)
-└── README.md                 # 📖 Tài liệu này (407 dòng)
+├── README.md                 # 📖 Tài liệu chính (467 dòng)
+└── PROJECT_STRUCTURE.md      # 📋 Cấu trúc dự án (248 dòng)
 ```
 
-## 🔧 Yêu cầu phần cứng
+## 🚀 Cài đặt và sử dụng
 
-### Cảm biến được hỗ trợ
-- **PZEM-004T-10A**: Dải đo 0-10A (shunt tích hợp)
-- **PZEM-004T-100A**: Dải đo 0-100A (CT ngoài)
+### Yêu cầu hệ thống
+- **Python**: 3.7+
+- **Dependencies**: pyserial, tabulate, pandas
+- **OS**: Linux, macOS, Windows
+- **Phần cứng**: PZEM-004T + USB-to-Serial adapter (PL2303, CH340, CP210, FTDI)
 
-### Bộ chuyển đổi USB-to-Serial được hỗ trợ
-- **PL2303** (Prolific) - Hỗ trợ đầy đủ
-- **CH340/CH341** (WCH) - Hỗ trợ đầy đủ
-- **CP2102/CP2104** (Silicon Labs) - Hỗ trợ đầy đủ
-- **FT232R** (FTDI) - Hỗ trợ đầy đủ
-
-### Sơ đồ kết nối
-```
-PZEM-004T Module:
-┌─────────────────┐
-│   TTL Interface │
-├─────────────────┤
-│ GND │ TX │ RX │ 5V │
-└─────┴────┴────┴────┘
-         │
-         ▼
-┌─────────────────┐
-│ TTL to USB Cable│
-└─────────────────┘
-         │
-         ▼
-┌─────────────────┐
-│      PC/USB     │
-└─────────────────┘
-```
-
-**Lưu ý quan trọng**: TTL Interface là thụ động, cần nguồn 5V ngoài. Tất cả 4 chân phải được kết nối: GND, TX, RX, 5V.
-
-## 📦 Cài đặt và thiết lập
-
-### Bước 1: Clone repository
+### Cài đặt
 ```bash
-git clone https://github.com/levanduy093-work/ac_management.git
-cd ac_management
-```
-
-### Bước 2: Cài đặt dependencies
-```bash
-# Tạo virtual environment
-python3 -m venv venv
-source venv/bin/activate  # Linux/Mac
-# hoặc
-venv\Scripts\activate     # Windows
-
-# Cài đặt dependencies
-pip install -r requirements.txt
-```
-
-### Bước 3: Cấp quyền truy cập Serial (Linux)
-```bash
-# Thêm user vào group dialout
-sudo usermod -a -G dialout $USER
-
-# Hoặc cấp quyền cho thiết bị cụ thể
-sudo chmod 666 /dev/ttyUSB*
-```
-
-## 🚀 Sử dụng
-
-### 1. Cài đặt nhanh
-```bash
-# Clone repository
 git clone <repository-url>
 cd ac_management
-
-# Cài đặt dependencies
 pip install -r requirements.txt
-
-# Hoặc sử dụng Makefile
-make install
 ```
 
-### 2. Demo nhanh
+### Chạy giám sát
 ```bash
-# Chạy demo để kiểm tra thiết bị
 python tools/read_ac_sensor.py
-
-# Hoặc sử dụng Makefile
+# hoặc
 make run-monitor
 ```
 
-### 3. Sử dụng các công cụ
-
-#### Giám sát đa cảm biến
-```bash
-python tools/read_ac_sensor.py
-
-# Hoặc sử dụng Makefile
-make run-monitor
-```
-
-#### Reset energy counter
-```bash
-python tools/reset_energy.py
-
-# Hoặc sử dụng Makefile
-make run-reset
-```
-
-### 4. Sử dụng thư viện trong code
-```python
-from src.pzem import PZEM004T
-
-# Tạo instance
-pzem = PZEM004T(port='/dev/ttyUSB0')
-
-# Đọc dữ liệu
-measurements = pzem.get_all_measurements()
-print(f"Voltage: {measurements['voltage']:.1f}V")
-print(f"Power: {measurements['power']:.1f}W")
-```
-
-## 📱 Giao diện và Output
-
-### Thư viện PZEM-004T
-```
-=== PZEM-004T Measurements ===
-Voltage:       225.4 V
-Current:         0.830 A
-Power:         185.2 W
-Energy:          1.547 kWh
-Frequency:      50.0 Hz
-Power Factor:    0.98
-Alarm Status:   OFF
-================================
-```
-
-### Ứng dụng đa cảm biến
-```
-=== PZEM Sensors Data - 2025-08-04 10:30:15 ===
-Found 3 active sensor(s)
-
-┌─────────────────┬──────────────┬──────────────┬───────────┬──────────────┬─────────────────┬──────────────┬───────┐
-│ Port            │ Voltage (V)  │ Current (A)  │ Power (W) │ Energy (Wh)  │ Frequency (Hz)  │ Power Factor │ Alarm │
-├─────────────────┼──────────────┼──────────────┼───────────┼──────────────┼─────────────────┼──────────────┼───────┤
-│ /dev/ttyUSB0    │ 225.4        │ 0.830        │ 185.2     │ 1547         │ 50.0            │ 0.98         │ OFF   │
-│ /dev/ttyUSB1    │ 226.1        │ 2.150        │ 485.6     │ 3842         │ 50.0            │ 0.97         │ OFF   │
-│ /dev/ttyUSB2    │ 224.8        │ 1.240        │ 278.3     │ 2156         │ 50.1            │ 0.99         │ OFF   │
-└─────────────────┴──────────────┴──────────────┴───────────┴──────────────┴─────────────────┴──────────────┴───────┘
-
-=== Summary ===
-Total Power: 949.1 W
-Total Energy: 7545 Wh
-```
-
-### Tool reset energy
-```
-🔌 PZEM-004T Energy Reset Tool
-========================================
-
-📋 Menu:
-1. Reset tất cả thiết bị (có xác nhận)
-2. Reset tất cả thiết bị (không xác nhận)
-3. Reset từng thiết bị (xác nhận từng cái)
-4. Quét lại thiết bị
-5. Thoát
-
-Thông tin thiết bị /dev/ttyUSB0:
-  Địa chỉ: 248
-  Năng lượng hiện tại: 1.547 kWh
-  Công suất: 185.2 W
-  Điện áp: 225.4 V
-  Dòng điện: 0.830 A
-
-✅ Đã reset thành công bộ đếm năng lượng trên /dev/ttyUSB0
-   Năng lượng sau reset: 0.000 kWh
-
-📋 Tóm tắt kết quả:
-   Tổng thiết bị: 3
-   Reset thành công: 3
-   Reset thất bại: 0
-```
-
-### Tool quản lý địa chỉ thiết bị
-```bash
-# Chạy tool quản lý địa chỉ
-python tools/change_address.py
-
-# Hoặc sử dụng command line
-python tools/change_address.py --scan                    # Quét thiết bị
-python tools/change_address.py --auto                    # Tự động gán địa chỉ duy nhất
-python tools/change_address.py --change /dev/ttyUSB0 1   # Thay đổi địa chỉ cụ thể
-```
-
-### Tool test multi-device reset
-```bash
-# Test reset tất cả thiết bị
-python tools/test_multi_device_reset.py
-
-# Test reset một thiết bị cụ thể
-python tools/test_multi_device_reset.py /dev/ttyUSB0
-```
-
-### Tool reset energy (KHÔNG thay đổi địa chỉ) - KHUYẾN NGHỊ
+### Tool reset energy (AN TOÀN - KHUYẾN NGHỊ)
 ```bash
 # Chạy tool reset không thay đổi địa chỉ (AN TOÀN HƠN)
 python tools/reset_energy_no_address_change.py
@@ -375,15 +200,6 @@ sudo usermod -a -G dialout $USER
 ```bash
 # Giải pháp AN TOÀN - KHÔNG thay đổi địa chỉ (KHUYẾN NGHỊ)
 python tools/reset_energy_no_address_change.py
-
-# Hoặc kiểm tra xung đột địa chỉ
-python tools/change_address.py --scan
-
-# Tự động gán địa chỉ duy nhất (CẨN THẬN - sẽ thay đổi địa chỉ)
-python tools/change_address.py --auto
-
-# Hoặc reset từng thiết bị riêng biệt
-python tools/reset_energy.py
 ```
 
 **💡 Khuyến nghị:** Sử dụng `reset_energy_no_address_change.py` để tránh ảnh hưởng đến cấu hình PZEM.
@@ -397,36 +213,27 @@ python tools/reset_energy.py
 ## 🤝 Đóng góp và phát triển
 
 ### Cấu trúc code
-- `src/pzem.py`: Thư viện PZEM-004T hoàn chỉnh (694 dòng)
+- `src/pzem.py`: Thư viện PZEM-004T hoàn chỉnh (709 dòng)
 - `tools/read_ac_sensor.py`: Ứng dụng giám sát đa cảm biến (362 dòng)
-- `tools/reset_energy.py`: Tool reset energy counter cải tiến (280 dòng)
-- `tools/reset_energy_no_address_change.py`: Tool reset energy AN TOÀN (280 dòng) ⭐
-- `tools/change_address.py`: Tool quản lý địa chỉ thiết bị (280 dòng)
-- `tools/test_multi_device_reset.py`: Script test multi-device reset (150 dòng)
+- `tools/reset_energy_no_address_change.py`: Tool reset energy AN TOÀN (299 dòng) ⭐
 
 ### Các thay đổi chính trong read_ac_sensor.py
-- **Import thư viện mới**: Sử dụng `PZEM004T` thay vì `PZEM004Tv30`
+- **Sử dụng thư viện mới**: Thay thế `PZEM004Tv30` bằng `PZEM004T`
 - **API cải thiện**: Sử dụng `get_all_measurements()` thay vì `update_values()`
+- **Hiệu suất tốt hơn**: Cache thông minh với interval 0.1s
+- **Error handling**: Retry mechanism và timeout cải thiện
 - **Hỗ trợ adapter mở rộng**: Thêm CP210, FTDI ngoài PL2303, CH340
-- **Cấu trúc code**: Tách logic chính vào hàm `main()` để dễ bảo trì
-- **Xử lý lỗi**: Cải thiện error handling và retry mechanism
-- **Quản lý file size**: Tự động dọn dẹp file CSV khi quá lớn
 
-### Các thay đổi chính trong reset_energy.py
-- **Giao diện đơn giản**: Tự động phát hiện và reset thiết bị
-- **Hiển thị thông tin**: Địa chỉ, năng lượng, công suất trước khi reset
-- **Báo cáo chi tiết**: Tóm tắt kết quả reset với số liệu cụ thể
-- **Hỗ trợ adapter mở rộng**: PL2303, CH340, CP210, FTDI
-- **Error handling**: Timeout và retry mechanism
+### Các thay đổi chính trong reset_energy_no_address_change.py
+- **KHÔNG thay đổi địa chỉ**: Giữ nguyên địa chỉ mặc định (0xF8)
+- **Reset tuần tự**: Tránh xung đột khi có nhiều thiết bị cùng địa chỉ
+- **Retry mechanism**: Thử lại 3 lần cho mỗi thiết bị
+- **Timeout thông minh**: Đợi lâu hơn giữa các thiết bị có xung đột địa chỉ
+- **Menu tương tác**: Dễ sử dụng với xác nhận an toàn
 
-### Đóng góp
-1. Fork repository này
-2. Tạo feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to branch (`git push origin feature/AmazingFeature`)
-5. Tạo Pull Request
+## 📈 Roadmap
 
-### Roadmap
+### Tính năng đang phát triển
 - [ ] Web interface với Flask/Django
 - [ ] Database integration (PostgreSQL, MySQL)
 - [ ] REST API endpoints
@@ -437,31 +244,34 @@ python tools/reset_energy.py
 - [ ] GUI application với tkinter/PyQt
 - [ ] Automated testing suite
 - [ ] Docker containerization
+
+### Cải thiện cấu trúc
 - [ ] Examples directory với các ví dụ sử dụng
 - [ ] Setup script cho cài đặt thư viện
+- [ ] Unit tests và integration tests
+- [ ] CI/CD pipeline
+- [ ] Code coverage reporting
 
 ## 📄 License
 
-Dự án này được phân phối dưới MIT License. Xem file `LICENSE` để biết thêm chi tiết.
+Dự án này được phân phối dưới giấy phép MIT. Xem file [LICENSE](LICENSE) để biết thêm chi tiết.
 
-## 📞 Liên hệ và hỗ trợ
+## 🤝 Đóng góp
 
-- **Developer**: Lê Văn Duy
-- **Email**: levanduy093.work@gmail.com  
-- **GitHub**: [@levanduy093-work](https://github.com/levanduy093-work)
-- **Repository**: [ac_management](https://github.com/levanduy093-work/ac_management)
+Chúng tôi hoan nghênh mọi đóng góp! Vui lòng:
 
-### Báo lỗi (Bug Reports)
-Nếu bạn gặp lỗi, vui lòng tạo [GitHub Issue](https://github.com/levanduy093-work/ac_management/issues) với thông tin:
-- OS và phiên bản Python
-- Model PZEM-004T và USB-to-Serial adapter
-- Log lỗi chi tiết
-- Các bước tái tạo lỗi
-- Phiên bản thư viện đang sử dụng (cũ hay mới)
+1. Fork dự án
+2. Tạo feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit thay đổi (`git commit -m 'Add some AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Mở Pull Request
 
-### Feature Requests
-Có ý tưởng tính năng mới? Tạo [GitHub Issue](https://github.com/levanduy093-work/ac_management/issues) với label `enhancement`.
+## 📞 Liên hệ
+
+- **Email**: [your-email@example.com]
+- **GitHub**: [your-github-username]
+- **Website**: [your-website.com]
 
 ---
 
-**⭐ Nếu dự án này hữu ích, đừng quên star repository để ủng hộ developer! ⭐**
+**Lưu ý**: Dự án này được phát triển để giám sát và ghi dữ liệu từ cảm biến PZEM-004T một cách chuyên nghiệp và đáng tin cậy. Tool reset energy đã được tối ưu để không thay đổi địa chỉ PZEM, đảm bảo an toàn và dễ sử dụng.

@@ -10,11 +10,11 @@ Dự án AC Management là một hệ thống Python chuyên nghiệp để giá
 ac_management/
 ├── src/                       # 📚 Thư viện chính
 │   ├── __init__.py           # Package initialization (17 dòng)
-│   └── pzem.py               # Thư viện PZEM-004T hoàn chỉnh (694 dòng)
+│   └── pzem.py               # Thư viện PZEM-004T hoàn chỉnh (709 dòng)
 ├── tools/                     # 🔧 Công cụ ứng dụng
 │   ├── __init__.py           # Package initialization (7 dòng)
 │   ├── read_ac_sensor.py     # Script giám sát đa cảm biến (362 dòng)
-│   └── reset_energy.py       # Tool reset energy counter (82 dòng)
+│   └── reset_energy_no_address_change.py # Tool reset energy AN TOÀN (299 dòng)
 ├── docs/                      # 📋 Tài liệu
 │   ├── PZEM004T.md           # Hướng dẫn chi tiết thư viện (572 dòng)
 │   └── DATA_LOGGING.md       # Hướng dẫn CSV logging (114 dòng)
@@ -25,10 +25,10 @@ ac_management/
 │       └── pzem__dev_ttyUSB2.csv (49 dòng dữ liệu)
 ├── Makefile                   # 🛠️ Quản lý dự án (84 dòng)
 ├── requirements.txt           # 📦 Dependencies (4 dòng)
-├── CHANGELOG.md              # 📝 Lịch sử thay đổi (82 dòng)
+├── CHANGELOG.md              # 📝 Lịch sử thay đổi (108 dòng)
 ├── LICENSE                   # 📄 Giấy phép (22 dòng)
-├── README.md                 # 📖 Tài liệu chính (407 dòng)
-└── PROJECT_STRUCTURE.md      # 📋 File này (227 dòng)
+├── README.md                 # 📖 Tài liệu chính (467 dòng)
+└── PROJECT_STRUCTURE.md      # 📋 File này (248 dòng)
 ```
 
 ## Mô tả chi tiết
@@ -41,7 +41,7 @@ ac_management/
 - Version: 2.0.0
 - Author: AC Management Team
 
-#### `src/pzem.py` (694 dòng)
+#### `src/pzem.py` (709 dòng)
 - **Thư viện PZEM-004T hoàn chỉnh** với triển khai đầy đủ giao thức Modbus-RTU
 - Hỗ trợ tất cả function codes và register mapping theo tài liệu kỹ thuật
 - Xử lý lỗi toàn diện với CRC validation và error handling
@@ -49,6 +49,7 @@ ac_management/
 - API đầy đủ cho đọc dữ liệu, cấu hình và điều khiển
 - Tương thích ngược với tên class cũ `PZEM004Tv30`
 - Hỗ trợ calibration và reset energy với verification
+- **Cải tiến reset energy** với retry mechanism và timeout thông minh
 
 ### 🔧 Công cụ ứng dụng (`tools/`)
 
@@ -66,13 +67,16 @@ ac_management/
 - Cơ chế retry và error handling toàn diện
 - Tính tổng công suất và năng lượng của tất cả cảm biến
 
-#### `tools/reset_energy.py` (82 dòng)
-- **Tool reset energy counter** với giao diện đơn giản
+#### `tools/reset_energy_no_address_change.py` (299 dòng)
+- **Tool reset energy counter AN TOÀN** - KHÔNG thay đổi địa chỉ PZEM
 - Tự động phát hiện thiết bị PZEM-004T
-- Reset bộ đếm năng lượng cho từng thiết bị
-- Hiển thị trạng thái reset và báo cáo kết quả
+- Reset bộ đếm năng lượng cho từng thiết bị tuần tự
+- **Giữ nguyên địa chỉ mặc định** (0xF8) để tránh ảnh hưởng cấu hình
+- Sử dụng timeout ngắn và retry mechanism để tránh xung đột
+- Hiển thị trạng thái reset và báo cáo kết quả chi tiết
 - Hỗ trợ nhiều loại USB-to-Serial adapter
-- Timeout và error handling
+- Menu tương tác dễ sử dụng
+- **Giải pháp tối ưu** cho vấn đề reset với nhiều thiết bị
 
 ### 📋 Tài liệu (`docs/`)
 
@@ -108,17 +112,19 @@ ac_management/
 
 ### 📝 Tài liệu dự án
 
-#### `README.md` (407 dòng)
+#### `README.md` (467 dòng)
 - **Tài liệu chính** với tổng quan dự án chi tiết
 - Hướng dẫn cài đặt và sử dụng từng bước
 - Tính năng chi tiết và troubleshooting guide
 - Thông số kỹ thuật chính xác theo datasheet
 - Ví dụ sử dụng và giao diện output
+- **Hướng dẫn sử dụng tool reset energy AN TOÀN**
 
-#### `CHANGELOG.md` (82 dòng)
+#### `CHANGELOG.md` (108 dòng)
 - **Lịch sử thay đổi** theo format Keep a Changelog
 - Semantic Versioning với phiên bản 2.0.0 hiện tại
 - Chi tiết các thay đổi qua các phiên bản
+- **Ghi lại việc fix lỗi reset energy với nhiều thiết bị**
 
 #### `LICENSE` (22 dòng)
 - **Giấy phép MIT** với điều khoản sử dụng và phân phối
@@ -135,12 +141,14 @@ ac_management/
 - ✅ **API linh hoạt**: Đọc từng giá trị hoặc tất cả cùng lúc
 - ✅ **Quy tắc hiển thị**: Tuân thủ datasheet cho công suất và năng lượng
 - ✅ **Tương thích ngược**: Hỗ trợ cả tên class cũ và mới
+- ✅ **Cải tiến reset energy**: Retry mechanism và timeout thông minh
 
 ### Công cụ hỗ trợ
-- ✅ **Tool reset energy**: Tự động phát hiện, reset với báo cáo chi tiết
+- ✅ **Tool reset energy AN TOÀN**: `reset_energy_no_address_change.py` - KHÔNG thay đổi địa chỉ PZEM
 - ✅ **Hỗ trợ đa adapter**: PL2303, CH340, CP210, FTDI
 - ✅ **Error handling**: Timeout và retry mechanism
 - ✅ **Bảo mật**: Xác nhận trước khi reset
+- ✅ **Reset tuần tự**: Tránh xung đột khi có nhiều thiết bị cùng địa chỉ
 
 ### Ứng dụng giám sát đa cảm biến
 - ✅ **Tự động phát hiện cảm biến**: Quét và kết nối tự động với các thiết bị PZEM-004T
@@ -227,9 +235,9 @@ python tools/read_ac_sensor.py
 make run-monitor
 ```
 
-### Reset energy
+### Reset energy (AN TOÀN - KHUYẾN NGHỊ)
 ```bash
-python tools/reset_energy.py
+python tools/reset_energy_no_address_change.py
 # hoặc
 make run-reset
 ```
@@ -245,4 +253,4 @@ print(f"Power: {measurements['power']:.1f}W")
 
 ---
 
-**Lưu ý**: Cấu trúc này được cập nhật lần cuối vào tháng 8/2025 và phản ánh trạng thái hiện tại của dự án với phiên bản 2.0.0. 
+**Lưu ý**: Cấu trúc này được cập nhật lần cuối vào tháng 8/2025 và phản ánh trạng thái hiện tại của dự án với phiên bản 2.0.0. Tool reset energy đã được tối ưu để không thay đổi địa chỉ PZEM, đảm bảo an toàn và dễ sử dụng. 
