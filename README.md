@@ -178,11 +178,17 @@ make db-latest
 # Dọn dẹp dữ liệu cũ
 make db-cleanup
 
-# Xuất dữ liệu ra CSV
-python tools/query_database.py --export-csv data_export.csv --days 7
+# Xuất dữ liệu ra CSV (file đơn)
+python tools/query_database.py --export-csv export.csv --days 7
 
-# Xuất dữ liệu ra JSON
-python tools/query_database.py --export-json data_export.json --days 30
+# Xuất dữ liệu ra JSON (file đơn)
+python tools/query_database.py --export-json export.json --days 30
+
+# 🆕 Xuất dữ liệu theo port riêng biệt (CSV)
+python tools/query_database.py --export-csv-separate --days 7
+
+# 🆕 Xuất dữ liệu theo port riêng biệt (JSON)
+python tools/query_database.py --export-json-separate --days 30
 
 # 🆕 GUI Tool tương tác (khuyến nghị)
 make db-gui

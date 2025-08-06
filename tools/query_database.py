@@ -15,78 +15,183 @@ import json
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 from database import PZEMDatabase
 
-def export_to_csv(db, output_file, port=None, days=None, limit=None):
+def export_to_csv(db, output_file=None, port=None, days=None, limit=None, separate_by_port=False):
     """
-    Export data to CSV file
+    Export data to CSV file(s)
     
     Args:
         db: Database instance
-        output_file: Output CSV file path
+        output_file: Output CSV file path (optional if separate_by_port=True)
         port: Filter by specific port
         days: Number of days to look back
         limit: Maximum number of records
+        separate_by_port: If True, export each port to separate files
     """
     try:
-        if port:
-            data = db.get_measurements_by_port(port, limit or 1000)
+        # Create csv_log directory if it doesn't exist
+        csv_dir = "data/csv_log"
+        os.makedirs(csv_dir, exist_ok=True)
+        
+        if separate_by_port:
+            # Export each port to separate files
+            sensors = db.get_sensor_summary()
+            total_exported = 0
+            
+            for sensor in sensors:
+                port_name = sensor['port']
+                # Clean port name for filename
+                port_clean = port_name.replace('/', '_').replace('\\', '_').replace(':', '_')
+                
+                # Generate filename with timestamp
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                filename = f"{csv_dir}/pzem_{port_clean}_{timestamp}.csv"
+                
+                # Get data for this port
+                data = db.get_measurements_by_port(port_name, limit or 1000)
+                
+                if not data:
+                    print(f"⚠️  No data found for port {port_name}")
+                    continue
+                
+                # Filter by days if specified
+                if days:
+                    cutoff_date = datetime.now() - timedelta(days=days)
+                    data = [row for row in data if datetime.strptime(row['timestamp'], '%Y-%m-%d %H:%M:%S') >= cutoff_date]
+                
+                if not data:
+                    print(f"⚠️  No data in date range for port {port_name}")
+                    continue
+                
+                # Write to CSV
+                with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
+                    fieldnames = ['timestamp', 'port', 'voltage', 'current', 'power', 'energy', 'frequency', 'power_factor', 'alarm_status']
+                    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                    writer.writeheader()
+                    writer.writerows(data)
+                
+                print(f"✅ Exported {len(data)} records for {port_name} to {filename}")
+                total_exported += len(data)
+            
+            print(f"📊 Total exported: {total_exported} records across {len(sensors)} ports")
+            return True
+            
         else:
-            data = db.get_latest_measurements(limit or 1000)
-        
-        if not data:
-            print("❌ No data found for export")
-            return False
-        
-        # Filter by days if specified
-        if days:
-            cutoff_date = datetime.now() - timedelta(days=days)
-            data = [row for row in data if datetime.strptime(row['timestamp'], '%Y-%m-%d %H:%M:%S') >= cutoff_date]
-        
-        # Write to CSV
-        with open(output_file, 'w', newline='', encoding='utf-8') as csvfile:
-            fieldnames = ['timestamp', 'port', 'voltage', 'current', 'power', 'energy', 'frequency', 'power_factor', 'alarm_status']
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writeheader()
-            writer.writerows(data)
-        
-        print(f"✅ Exported {len(data)} records to {output_file}")
-        return True
+            # Export to single file (original behavior)
+            if not output_file:
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                output_file = f"{csv_dir}/export_{timestamp}.csv"
+            
+            if port:
+                data = db.get_measurements_by_port(port, limit or 1000)
+            else:
+                data = db.get_latest_measurements(limit or 1000)
+            
+            if not data:
+                print("❌ No data found for export")
+                return False
+            
+            # Filter by days if specified
+            if days:
+                cutoff_date = datetime.now() - timedelta(days=days)
+                data = [row for row in data if datetime.strptime(row['timestamp'], '%Y-%m-%d %H:%M:%S') >= cutoff_date]
+            
+            # Write to CSV
+            with open(output_file, 'w', newline='', encoding='utf-8') as csvfile:
+                fieldnames = ['timestamp', 'port', 'voltage', 'current', 'power', 'energy', 'frequency', 'power_factor', 'alarm_status']
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(data)
+            
+            print(f"✅ Exported {len(data)} records to {output_file}")
+            return True
         
     except Exception as e:
         print(f"❌ Error exporting to CSV: {e}")
         return False
 
-def export_to_json(db, output_file, port=None, days=None, limit=None):
+def export_to_json(db, output_file=None, port=None, days=None, limit=None, separate_by_port=False):
     """
-    Export data to JSON file
+    Export data to JSON file(s)
     
     Args:
         db: Database instance
-        output_file: Output JSON file path
+        output_file: Output JSON file path (optional if separate_by_port=True)
         port: Filter by specific port
         days: Number of days to look back
         limit: Maximum number of records
+        separate_by_port: If True, export each port to separate files
     """
     try:
-        if port:
-            data = db.get_measurements_by_port(port, limit or 1000)
+        # Create json_log directory if it doesn't exist
+        json_dir = "data/json_log"
+        os.makedirs(json_dir, exist_ok=True)
+        
+        if separate_by_port:
+            # Export each port to separate files
+            sensors = db.get_sensor_summary()
+            total_exported = 0
+            
+            for sensor in sensors:
+                port_name = sensor['port']
+                # Clean port name for filename
+                port_clean = port_name.replace('/', '_').replace('\\', '_').replace(':', '_')
+                
+                # Generate filename with timestamp
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                filename = f"{json_dir}/pzem_{port_clean}_{timestamp}.json"
+                
+                # Get data for this port
+                data = db.get_measurements_by_port(port_name, limit or 1000)
+                
+                if not data:
+                    print(f"⚠️  No data found for port {port_name}")
+                    continue
+                
+                # Filter by days if specified
+                if days:
+                    cutoff_date = datetime.now() - timedelta(days=days)
+                    data = [row for row in data if datetime.strptime(row['timestamp'], '%Y-%m-%d %H:%M:%S') >= cutoff_date]
+                
+                if not data:
+                    print(f"⚠️  No data in date range for port {port_name}")
+                    continue
+                
+                # Write to JSON
+                with open(filename, 'w', encoding='utf-8') as jsonfile:
+                    json.dump(data, jsonfile, indent=2, ensure_ascii=False)
+                
+                print(f"✅ Exported {len(data)} records for {port_name} to {filename}")
+                total_exported += len(data)
+            
+            print(f"📊 Total exported: {total_exported} records across {len(sensors)} ports")
+            return True
+            
         else:
-            data = db.get_latest_measurements(limit or 1000)
-        
-        if not data:
-            print("❌ No data found for export")
-            return False
-        
-        # Filter by days if specified
-        if days:
-            cutoff_date = datetime.now() - timedelta(days=days)
-            data = [row for row in data if datetime.strptime(row['timestamp'], '%Y-%m-%d %H:%M:%S') >= cutoff_date]
-        
-        # Write to JSON
-        with open(output_file, 'w', encoding='utf-8') as jsonfile:
-            json.dump(data, jsonfile, indent=2, ensure_ascii=False)
-        
-        print(f"✅ Exported {len(data)} records to {output_file}")
-        return True
+            # Export to single file (original behavior)
+            if not output_file:
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                output_file = f"{json_dir}/export_{timestamp}.json"
+            
+            if port:
+                data = db.get_measurements_by_port(port, limit or 1000)
+            else:
+                data = db.get_latest_measurements(limit or 1000)
+            
+            if not data:
+                print("❌ No data found for export")
+                return False
+            
+            # Filter by days if specified
+            if days:
+                cutoff_date = datetime.now() - timedelta(days=days)
+                data = [row for row in data if datetime.strptime(row['timestamp'], '%Y-%m-%d %H:%M:%S') >= cutoff_date]
+            
+            # Write to JSON
+            with open(output_file, 'w', encoding='utf-8') as jsonfile:
+                json.dump(data, jsonfile, indent=2, ensure_ascii=False)
+            
+            print(f"✅ Exported {len(data)} records to {output_file}")
+            return True
         
     except Exception as e:
         print(f"❌ Error exporting to JSON: {e}")
@@ -191,11 +296,17 @@ Examples:
   # Show latest 20 measurements
   python query_database.py --latest 20
   
-  # Export last 7 days to CSV
-  python query_database.py --export-csv data_export.csv --days 7
+  # Export last 7 days to CSV (single file)
+  python query_database.py --export-csv export.csv --days 7
+  
+  # Export each port to separate CSV files
+  python query_database.py --export-csv-separate --days 7
   
   # Export specific port to JSON
-  python query_database.py --export-json /dev/ttyUSB0_data.json --port /dev/ttyUSB0
+  python query_database.py --export-json export.json --port /dev/ttyUSB0
+  
+  # Export each port to separate JSON files
+  python query_database.py --export-json-separate --days 30
   
   # Clean up data older than 30 days
   python query_database.py --cleanup 30
@@ -209,9 +320,13 @@ Examples:
     parser.add_argument('--latest', type=int, metavar='N',
                        help='Show latest N measurements (default: 10)')
     parser.add_argument('--export-csv', metavar='FILE',
-                       help='Export data to CSV file')
+                       help='Export data to CSV file (saved to data/csv_log/)')
     parser.add_argument('--export-json', metavar='FILE',
-                       help='Export data to JSON file')
+                       help='Export data to JSON file (saved to data/json_log/)')
+    parser.add_argument('--export-csv-separate', action='store_true',
+                       help='Export each port to separate CSV files in data/csv_log/')
+    parser.add_argument('--export-json-separate', action='store_true',
+                       help='Export each port to separate JSON files in data/json_log/')
     parser.add_argument('--port', metavar='PORT',
                        help='Filter by specific port (e.g., /dev/ttyUSB0)')
     parser.add_argument('--days', type=int, metavar='N',
@@ -228,7 +343,7 @@ Examples:
     
     # Check if any action is specified
     if not any([args.stats, args.sensors, args.latest, args.export_csv, 
-                args.export_json, args.cleanup]):
+                args.export_json, args.export_csv_separate, args.export_json_separate, args.cleanup]):
         parser.print_help()
         return
     
@@ -251,10 +366,16 @@ Examples:
         show_latest_data(db, args.latest)
     
     if args.export_csv:
-        export_to_csv(db, args.export_csv, args.port, args.days, args.limit)
+        export_to_csv(db, args.export_csv, args.port, args.days, args.limit, separate_by_port=False)
     
     if args.export_json:
-        export_to_json(db, args.export_json, args.port, args.days, args.limit)
+        export_to_json(db, args.export_json, args.port, args.days, args.limit, separate_by_port=False)
+    
+    if args.export_csv_separate:
+        export_to_csv(db, None, args.port, args.days, args.limit, separate_by_port=True)
+    
+    if args.export_json_separate:
+        export_to_json(db, None, args.port, args.days, args.limit, separate_by_port=True)
     
     if args.cleanup:
         cleanup_database(db, args.cleanup)

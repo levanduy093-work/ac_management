@@ -102,7 +102,7 @@ GUI tool cung cấp menu tương tác với các tính năng:
 - 📊 Xem thống kê database
 - 🔌 Xem thông tin sensors
 - 📈 Xem measurements gần nhất
-- 📁 Xuất dữ liệu (CSV/JSON)
+- 📁 Xuất dữ liệu (CSV/JSON - file đơn hoặc theo port riêng biệt)
 - 🗑️ Dọn dẹp dữ liệu cũ
 - 🔍 Truy vấn nâng cao (theo port, date range, statistics)
 
@@ -178,23 +178,26 @@ Output:
 
 #### 3. Xuất dữ liệu ra CSV
 ```bash
-# Xuất tất cả dữ liệu
+# Xuất tất cả dữ liệu (file đơn)
 python tools/query_database.py --export-csv all_data.csv
 
-# Xuất dữ liệu 7 ngày gần đây
+# Xuất dữ liệu 7 ngày gần đây (file đơn)
 python tools/query_database.py --export-csv recent_data.csv --days 7
 
-# Xuất dữ liệu từ sensor cụ thể
+# Xuất dữ liệu từ sensor cụ thể (file đơn)
 python tools/query_database.py --export-csv sensor1_data.csv --port /dev/ttyUSB0
 
-# Xuất 1000 records gần nhất
-python tools/query_database.py --export-csv latest_1000.csv --limit 1000
+# 🆕 Xuất dữ liệu theo port riêng biệt (nhiều file)
+python tools/query_database.py --export-csv-separate --days 7
 ```
 
 #### 4. Xuất dữ liệu ra JSON
 ```bash
-# Xuất dữ liệu ra JSON
+# Xuất dữ liệu ra JSON (file đơn)
 python tools/query_database.py --export-json data.json --days 30
+
+# 🆕 Xuất dữ liệu theo port riêng biệt (nhiều file)
+python tools/query_database.py --export-json-separate --days 30
 ```
 
 #### 5. Dọn dẹp dữ liệu cũ

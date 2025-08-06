@@ -175,18 +175,24 @@ class DatabaseGUI:
             self.show_header()
             print("📁 Export Data")
             print("-" * 40)
-            print("1. 📊 Export to CSV")
-            print("2. 📄 Export to JSON")
-            print("3. 🔙 Back to Main Menu")
+            print("1. 📊 Export to CSV (Single File)")
+            print("2. 📄 Export to JSON (Single File)")
+            print("3. 📊 Export to CSV (Separate by Port)")
+            print("4. 📄 Export to JSON (Separate by Port)")
+            print("5. 🔙 Back to Main Menu")
             print()
             
-            choice = self.get_user_choice(1, 3)
+            choice = self.get_user_choice(1, 5)
             
             if choice == 1:
                 self.export_to_csv()
             elif choice == 2:
                 self.export_to_json()
             elif choice == 3:
+                self.export_to_csv_separate()
+            elif choice == 4:
+                self.export_to_json_separate()
+            elif choice == 5:
                 break
     
     def export_to_csv(self):
@@ -197,12 +203,20 @@ class DatabaseGUI:
         print("-" * 40)
         
         try:
+            # Create csv_log directory if it doesn't exist
+            csv_dir = "data/csv_log"
+            os.makedirs(csv_dir, exist_ok=True)
+            
             # Get export parameters
-            filename = input("Enter output filename (default: export.csv): ").strip()
+            filename = input(f"Enter output filename (default: export.csv): ").strip()
             if not filename:
-                filename = "export.csv"
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                filename = f"export_{timestamp}.csv"
             if not filename.endswith('.csv'):
                 filename += '.csv'
+            
+            # Add directory path
+            filename = os.path.join(csv_dir, filename)
             
             # Get port filter
             port = input("Enter port to filter (e.g., /dev/ttyUSB0) or press Enter for all: ").strip()
@@ -261,6 +275,102 @@ class DatabaseGUI:
         
         input("\nPress Enter to continue...")
     
+    def export_to_csv_separate(self):
+        """Export data to separate CSV files by port"""
+        self.clear_screen()
+        self.show_header()
+        print("📊 Export to CSV (Separate by Port)")
+        print("-" * 50)
+        
+        try:
+            # Get days filter
+            days = input("Enter number of days to look back (press Enter for all): ").strip()
+            if days:
+                try:
+                    days = int(days)
+                except ValueError:
+                    days = None
+            else:
+                days = None
+            
+            # Get limit
+            limit = input("Enter maximum records per port (press Enter for 1000): ").strip()
+            if limit:
+                try:
+                    limit = int(limit)
+                except ValueError:
+                    limit = 1000
+            else:
+                limit = 1000
+            
+            print(f"\n🔄 Exporting data to separate CSV files...")
+            
+            # Import the export function from query_database
+            sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+            from query_database import export_to_csv
+            
+            # Call the export function with separate_by_port=True
+            success = export_to_csv(self.db, None, None, days, limit, separate_by_port=True)
+            
+            if success:
+                print(f"✅ Export completed successfully!")
+                print(f"📁 Files saved to: data/csv_log/")
+            else:
+                print(f"❌ Export failed!")
+            
+        except Exception as e:
+            print(f"❌ Error exporting to CSV: {e}")
+        
+        input("\nPress Enter to continue...")
+    
+    def export_to_json_separate(self):
+        """Export data to separate JSON files by port"""
+        self.clear_screen()
+        self.show_header()
+        print("📄 Export to JSON (Separate by Port)")
+        print("-" * 50)
+        
+        try:
+            # Get days filter
+            days = input("Enter number of days to look back (press Enter for all): ").strip()
+            if days:
+                try:
+                    days = int(days)
+                except ValueError:
+                    days = None
+            else:
+                days = None
+            
+            # Get limit
+            limit = input("Enter maximum records per port (press Enter for 1000): ").strip()
+            if limit:
+                try:
+                    limit = int(limit)
+                except ValueError:
+                    limit = 1000
+            else:
+                limit = 1000
+            
+            print(f"\n🔄 Exporting data to separate JSON files...")
+            
+            # Import the export function from query_database
+            sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+            from query_database import export_to_json
+            
+            # Call the export function with separate_by_port=True
+            success = export_to_json(self.db, None, None, days, limit, separate_by_port=True)
+            
+            if success:
+                print(f"✅ Export completed successfully!")
+                print(f"📁 Files saved to: data/json_log/")
+            else:
+                print(f"❌ Export failed!")
+            
+        except Exception as e:
+            print(f"❌ Error exporting to JSON: {e}")
+        
+        input("\nPress Enter to continue...")
+    
     def export_to_json(self):
         """Export data to JSON"""
         self.clear_screen()
@@ -269,12 +379,20 @@ class DatabaseGUI:
         print("-" * 40)
         
         try:
+            # Create json_log directory if it doesn't exist
+            json_dir = "data/json_log"
+            os.makedirs(json_dir, exist_ok=True)
+            
             # Get export parameters
-            filename = input("Enter output filename (default: export.json): ").strip()
+            filename = input(f"Enter output filename (default: export.json): ").strip()
             if not filename:
-                filename = "export.json"
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                filename = f"export_{timestamp}.json"
             if not filename.endswith('.json'):
                 filename += '.json'
+            
+            # Add directory path
+            filename = os.path.join(json_dir, filename)
             
             # Get port filter
             port = input("Enter port to filter (e.g., /dev/ttyUSB0) or press Enter for all: ").strip()
