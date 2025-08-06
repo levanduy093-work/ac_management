@@ -214,14 +214,8 @@ class DatabaseGUI:
             if not filename.endswith('.csv'):
                 filename += '.csv'
             
-            # Ask about overwrite (default: yes)
-            overwrite_input = input("Overwrite existing file? (Y/n): ").strip().lower()
-            overwrite = overwrite_input != 'n'  # Default to True unless user explicitly says 'n'
-            if not overwrite and not filename.startswith('export_'):
-                # Add timestamp if not overwriting and not already timestamped
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                base_name = filename[:-4]  # Remove .csv
-                filename = f"{base_name}_{timestamp}.csv"
+            # Always overwrite by default
+            overwrite = True
             
             # Add directory path
             filename = os.path.join(csv_dir, filename)
@@ -311,9 +305,8 @@ class DatabaseGUI:
             else:
                 limit = 1000
             
-            # Ask about overwrite (default: yes)
-            overwrite_input = input("Overwrite existing files? (Y/n): ").strip().lower()
-            overwrite = overwrite_input != 'n'  # Default to True unless user explicitly says 'n'
+            # Always overwrite by default
+            overwrite = True
             
             print(f"\n🔄 Exporting data to separate CSV files...")
             
@@ -363,9 +356,8 @@ class DatabaseGUI:
             else:
                 limit = 1000
             
-            # Ask about overwrite (default: yes)
-            overwrite_input = input("Overwrite existing files? (Y/n): ").strip().lower()
-            overwrite = overwrite_input != 'n'  # Default to True unless user explicitly says 'n'
+            # Always overwrite by default
+            overwrite = True
             
             print(f"\n🔄 Exporting data to separate JSON files...")
             
@@ -406,14 +398,8 @@ class DatabaseGUI:
             if not filename.endswith('.json'):
                 filename += '.json'
             
-            # Ask about overwrite (default: yes)
-            overwrite_input = input("Overwrite existing file? (Y/n): ").strip().lower()
-            overwrite = overwrite_input != 'n'  # Default to True unless user explicitly says 'n'
-            if not overwrite and not filename.startswith('export_'):
-                # Add timestamp if not overwriting and not already timestamped
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                base_name = filename[:-5]  # Remove .json
-                filename = f"{base_name}_{timestamp}.json"
+            # Always overwrite by default
+            overwrite = True
             
             # Add directory path
             filename = os.path.join(json_dir, filename)
