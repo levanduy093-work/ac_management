@@ -98,6 +98,7 @@ ac_management/
 │   ├── read_ac_sensor.py     # Script giám sát đa cảm biến (CSV) (362 dòng)
 │   ├── read_ac_sensor_db.py  # Script giám sát đa cảm biến (Database) (MỚI)
 │   ├── query_database.py     # Tool truy vấn database (MỚI)
+│   ├── database_gui.py       # GUI tool tương tác (MỚI)
 │   └── reset_energy_no_address_change.py # Tool reset energy AN TOÀN (299 dòng)
 ├── docs/                      # 📋 Tài liệu
 │   ├── PZEM004T.md           # Hướng dẫn chi tiết thư viện (572 dòng)
@@ -182,6 +183,9 @@ python tools/query_database.py --export-csv data_export.csv --days 7
 
 # Xuất dữ liệu ra JSON
 python tools/query_database.py --export-json data_export.json --days 30
+
+# 🆕 GUI Tool tương tác (khuyến nghị)
+make db-gui
 ```
 
 ## 📊 Quản lý dữ liệu CSV

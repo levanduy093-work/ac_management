@@ -24,6 +24,7 @@ help:
 	@echo "  db-cleanup   - Clean up old data (30 days)"
 	@echo "  migrate-csv  - Migrate CSV data to database"
 	@echo "  migrate-csv-dry - Dry run CSV migration"
+	@echo "  db-gui       - Interactive database GUI tool"
 
 # Install dependencies
 install:
@@ -107,6 +108,10 @@ migrate-csv:
 
 migrate-csv-dry:
 	python tools/migrate_csv_to_db.py --dry-run
+
+# GUI Tools
+db-gui:
+	python tools/database_gui.py
 
 # Quick start
 quick-start: install

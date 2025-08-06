@@ -86,7 +86,29 @@ python tools/query_database.py --cleanup 60
 
 ## 🔧 Tool Truy vấn Database
 
-### Cú pháp cơ bản
+### 🆕 GUI Tool tương tác (Khuyến nghị)
+
+Để dễ dàng truy vấn database mà không cần nhớ command line options:
+
+```bash
+# Chạy GUI tool
+make db-gui
+
+# Hoặc chạy trực tiếp
+python tools/database_gui.py
+```
+
+GUI tool cung cấp menu tương tác với các tính năng:
+- 📊 Xem thống kê database
+- 🔌 Xem thông tin sensors
+- 📈 Xem measurements gần nhất
+- 📁 Xuất dữ liệu (CSV/JSON)
+- 🗑️ Dọn dẹp dữ liệu cũ
+- 🔍 Truy vấn nâng cao (theo port, date range, statistics)
+
+### Command Line Tool
+
+#### Cú pháp cơ bản
 
 ```bash
 python tools/query_database.py [OPTIONS]
