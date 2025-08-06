@@ -15,8 +15,15 @@ help:
 	@echo "  lint         - Run linting"
 	@echo "  format       - Format code with black"
 	@echo "  docs         - Generate documentation"
-	@echo "  run-monitor  - Run the multi-sensor monitor"
+	@echo "  run-monitor  - Run the multi-sensor monitor (CSV storage)"
+	@echo "  run-monitor-db - Run the multi-sensor monitor (Database storage)"
 	@echo "  run-reset    - Run the energy reset tool"
+	@echo "  db-stats     - Show database statistics"
+	@echo "  db-sensors   - Show sensor summary"
+	@echo "  db-latest    - Show latest 20 measurements"
+	@echo "  db-cleanup   - Clean up old data (30 days)"
+	@echo "  migrate-csv  - Migrate CSV data to database"
+	@echo "  migrate-csv-dry - Dry run CSV migration"
 
 # Install dependencies
 install:
@@ -69,16 +76,41 @@ docs:
 	@echo "- docs/DATA_LOGGING.md: Data logging guide"
 	@echo "- README.md: Main documentation"
 
-# Run the multi-sensor monitor
+# Run the multi-sensor monitor (CSV storage)
 run-monitor:
 	python tools/read_ac_sensor.py
+
+# Run the multi-sensor monitor (Database storage)
+run-monitor-db:
+	python tools/read_ac_sensor_db.py
 
 # Run the energy reset tool (AN TOÀN - KHÔNG thay đổi địa chỉ)
 run-reset:
 	python tools/reset_energy_no_address_change.py
 
+# Database operations
+db-stats:
+	python tools/query_database.py --stats
+
+db-sensors:
+	python tools/query_database.py --sensors
+
+db-latest:
+	python tools/query_database.py --latest 20
+
+db-cleanup:
+	python tools/query_database.py --cleanup 30
+
+# Migration
+migrate-csv:
+	python tools/migrate_csv_to_db.py
+
+migrate-csv-dry:
+	python tools/migrate_csv_to_db.py --dry-run
+
 # Quick start
 quick-start: install
 	@echo "Installation complete!"
-	@echo "Run 'make run-monitor' to start monitoring"
+	@echo "Run 'make run-monitor' to start monitoring (CSV storage)"
+	@echo "Run 'make run-monitor-db' to start monitoring (Database storage)"
 	@echo "Run 'make run-reset' to reset energy counters" 

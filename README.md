@@ -78,6 +78,14 @@ Script sẽ đọc và hiển thị các thông số điện quan trọng từ m
 - 🗂️ **Tổ chức khoa học**: Dữ liệu được lưu trong thư mục `data/csv_logs/`
 - 📏 **Quản lý dung lượng**: Tự động dọn dẹp file khi vượt quá kích thước
 
+### Ghi dữ liệu Database (MỚI)
+- 💾 **SQLite Database**: Lưu trữ dữ liệu trong database SQLite `data/pzem_data.db`
+- ⚡ **Hiệu suất cao**: Truy vấn nhanh với indexes và tối ưu hóa
+- 🔍 **Truy vấn linh hoạt**: Hỗ trợ SQL queries mạnh mẽ
+- 📊 **Thống kê chi tiết**: Theo dõi sensors và measurements
+- 🗑️ **Tự động dọn dẹp**: Xóa dữ liệu cũ tự động
+- 🔧 **Tool truy vấn**: `query_database.py` với nhiều tùy chọn xuất dữ liệu
+
 ## 🗂️ Cấu trúc dự án
 
 ```
@@ -87,11 +95,14 @@ ac_management/
 │   └── pzem.py               # Thư viện PZEM-004T hoàn chỉnh (709 dòng)
 ├── tools/                     # 🔧 Công cụ ứng dụng
 │   ├── __init__.py           # Package initialization (7 dòng)
-│   ├── read_ac_sensor.py     # Script giám sát đa cảm biến (362 dòng)
+│   ├── read_ac_sensor.py     # Script giám sát đa cảm biến (CSV) (362 dòng)
+│   ├── read_ac_sensor_db.py  # Script giám sát đa cảm biến (Database) (MỚI)
+│   ├── query_database.py     # Tool truy vấn database (MỚI)
 │   └── reset_energy_no_address_change.py # Tool reset energy AN TOÀN (299 dòng)
 ├── docs/                      # 📋 Tài liệu
 │   ├── PZEM004T.md           # Hướng dẫn chi tiết thư viện (572 dòng)
-│   └── DATA_LOGGING.md       # Hướng dẫn CSV logging (114 dòng)
+│   ├── DATA_LOGGING.md       # Hướng dẫn CSV logging (114 dòng)
+│   └── DATABASE.md           # Hướng dẫn database storage (MỚI)
 ├── data/                      # 📊 Dữ liệu
 │   └── csv_logs/             # File CSV logs
 │       ├── pzem__dev_ttyUSB0.csv (49 dòng dữ liệu)
@@ -121,10 +132,19 @@ pip install -r requirements.txt
 ```
 
 ### Chạy giám sát
+
+#### Sử dụng CSV (cách cũ)
 ```bash
 python tools/read_ac_sensor.py
 # hoặc
 make run-monitor
+```
+
+#### Sử dụng Database (khuyến nghị)
+```bash
+python tools/read_ac_sensor_db.py
+# hoặc
+make run-monitor-db
 ```
 
 ### Tool reset energy (AN TOÀN - KHUYẾN NGHỊ)
@@ -142,6 +162,27 @@ python tools/reset_energy_no_address_change.py --port /dev/ttyUSB0  # Reset thi�
 - Giữ nguyên địa chỉ mặc định (0xF8) để tránh ảnh hưởng đến cấu hình
 - Sử dụng cơ chế reset tuần tự để tránh xung đột
 - **Khuyến nghị sử dụng tool này thay vì thay đổi địa chỉ**
+
+### Quản lý Database
+```bash
+# Xem thống kê database
+make db-stats
+
+# Xem thông tin sensors
+make db-sensors
+
+# Xem measurements gần nhất
+make db-latest
+
+# Dọn dẹp dữ liệu cũ
+make db-cleanup
+
+# Xuất dữ liệu ra CSV
+python tools/query_database.py --export-csv data_export.csv --days 7
+
+# Xuất dữ liệu ra JSON
+python tools/query_database.py --export-json data_export.json --days 30
+```
 
 ## 📊 Quản lý dữ liệu CSV
 
@@ -208,6 +249,7 @@ python tools/reset_energy_no_address_change.py
 
 - **[docs/PZEM004T.md](docs/PZEM004T.md)**: Hướng dẫn chi tiết thư viện
 - **[docs/DATA_LOGGING.md](docs/DATA_LOGGING.md)**: Hướng dẫn CSV logging
+- **[docs/DATABASE.md](docs/DATABASE.md)**: Hướng dẫn database storage
 - **[PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)**: Cấu trúc dự án chi tiết
 
 ## 🤝 Đóng góp và phát triển
