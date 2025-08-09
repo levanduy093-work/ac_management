@@ -383,15 +383,36 @@
             try {
                 showStatus('info', 'Đang tải xem trước dữ liệu...');
                 
-                const params = buildQueryParams();
-                const response = await fetch('/api/measurements?' + params.toString());
-                const result = await response.json();
+                const timeFilter = document.getElementById('time-filter').value;
+                const sensorPort = document.getElementById('sensor-filter').value;
+                let result;
                 
-                if (result.success) {
-                    previewData_cache = result.data;
-                    displayPreview(result.data);
-                    updatePreviewStats(result.data);
-                    showStatus('success', `Đã tải ${result.data.length} bản ghi để xem trước`);
+                if (timeFilter === 'custom') {
+                    // Use range endpoint for accurate total count across custom dates
+                    const startDate = document.getElementById('start-date').value;
+                    const endDate = document.getElementById('end-date').value;
+                    if (!startDate || !endDate) {
+                        showStatus('warning', 'Vui lòng chọn khoảng thời gian tùy chỉnh');
+                        return;
+                    }
+                    let url = `/api/measurements/range?start_date=${startDate}&end_date=${endDate}`;
+                    if (sensorPort) url += `&port=${encodeURIComponent(sensorPort)}`;
+                    const response = await fetch(url);
+                    result = await response.json();
+                } else {
+                    // Use main endpoint but override limit to a high value for accurate counts
+                    const params = buildQueryParams();
+                    params.append('limit', '100000');
+                    const response = await fetch('/api/measurements?' + params.toString());
+                    result = await response.json();
+                }
+                
+                if (result && result.success) {
+                    const totalCount = typeof result.count === 'number' ? result.count : (result.data ? result.data.length : 0);
+                    previewData_cache = result.data || [];
+                    displayPreview(previewData_cache);
+                    updatePreviewStats(previewData_cache, totalCount);
+                    showStatus('success', `Đã tải ${totalCount} bản ghi để xem trước`);
                 } else {
                     showStatus('danger', 'Lỗi khi tải dữ liệu xem trước');
                 }
@@ -459,7 +480,7 @@
             container.innerHTML = tableHTML;
         }
         
-        function updatePreviewStats(data) {
+        function updatePreviewStats(data, totalCount) {
             if (!data || data.length === 0) {
                 document.getElementById('preview-stats').style.display = 'none';
                 return;
@@ -468,7 +489,7 @@
             const sensors = [...new Set(data.map(d => d.port))];
             const dates = data.map(d => new Date(d.timestamp)).sort();
             
-            document.getElementById('total-records').textContent = data.length;
+            document.getElementById('total-records').textContent = (typeof totalCount === 'number' ? totalCount : data.length);
             document.getElementById('sensor-count').textContent = sensors.length;
             document.getElementById('date-from').textContent = dates[0]?.toLocaleDateString('vi-VN') || '-';
             document.getElementById('date-to').textContent = dates[dates.length - 1]?.toLocaleDateString('vi-VN') || '-';
