@@ -166,6 +166,7 @@
                     <h1 class="mb-0">
                         <i class="bi bi-lightning-charge"></i>
                         PZEM-004T Dashboard
+                        <span id="sensor-indicator" class="badge bg-warning ms-2 d-none"></span>
                     </h1>
                     <p class="mb-0 opacity-75">Hệ thống giám sát điện năng thời gian thực</p>
                 </div>
@@ -451,22 +452,52 @@
             }
         }
         
-        async function loadDashboardData() {
-            const response = await fetch('/api/dashboard');
+        async function loadDashboardData(selectedPort = null) {
+            let url = '/api/dashboard';
+            if (selectedPort) {
+                url += `?port=${encodeURIComponent(selectedPort)}`;
+            }
+            
+            const response = await fetch(url);
             const result = await response.json();
             
             if (result.success) {
                 const data = result.data;
                 
-                // Update statistics cards
-                document.getElementById('total-power').textContent = 
-                    data.summary.total_power.toFixed(1) + ' W';
-                document.getElementById('total-energy').textContent = 
-                    (data.summary.total_energy / 1000).toFixed(2) + ' kWh';
-                document.getElementById('avg-voltage').textContent = 
-                    data.summary.avg_voltage.toFixed(1) + ' V';
-                document.getElementById('sensor-count').textContent = 
-                    data.summary.sensor_count;
+                // Update statistics cards based on selection
+                if (selectedPort) {
+                    // Single sensor data - show current values
+                    document.getElementById('total-power').textContent = 
+                        data.summary.total_power.toFixed(1) + ' W';
+                    document.getElementById('total-energy').textContent = 
+                        (data.summary.total_energy / 1000).toFixed(2) + ' kWh';
+                    document.getElementById('avg-voltage').textContent = 
+                        data.summary.avg_voltage.toFixed(1) + ' V';
+                    document.getElementById('sensor-count').textContent = 
+                        data.summary.sensor_count;
+                        
+                    // Update labels to indicate single sensor view
+                    document.querySelector('#total-power').closest('.stat-card').querySelector('.label').textContent = 'Công suất hiện tại';
+                    document.querySelector('#total-energy').closest('.stat-card').querySelector('.label').textContent = 'Năng lượng hiện tại';
+                    document.querySelector('#avg-voltage').closest('.stat-card').querySelector('.label').textContent = 'Điện áp hiện tại';
+                    document.querySelector('#sensor-count').closest('.stat-card').querySelector('.label').textContent = 'Cảm biến được chọn';
+                } else {
+                    // All sensors data - show aggregated values
+                    document.getElementById('total-power').textContent = 
+                        data.summary.total_power.toFixed(1) + ' W';
+                    document.getElementById('total-energy').textContent = 
+                        (data.summary.total_energy / 1000).toFixed(2) + ' kWh';
+                    document.getElementById('avg-voltage').textContent = 
+                        data.summary.avg_voltage.toFixed(1) + ' V';
+                    document.getElementById('sensor-count').textContent = 
+                        data.summary.sensor_count;
+                        
+                    // Reset labels to default
+                    document.querySelector('#total-power').closest('.stat-card').querySelector('.label').textContent = 'TỔNG CÔNG SUẤT';
+                    document.querySelector('#total-energy').closest('.stat-card').querySelector('.label').textContent = 'TỔNG NĂNG LƯỢNG';
+                    document.querySelector('#avg-voltage').closest('.stat-card').querySelector('.label').textContent = 'ĐIỆN ÁP TRUNG BÌNH';
+                    document.querySelector('#sensor-count').closest('.stat-card').querySelector('.label').textContent = 'SỐ CẢM BIẾN';
+                }
                 
                 // Update charts with recent data
                 updateCharts(data.chart_data);
@@ -492,9 +523,58 @@
                     sensorSelect.appendChild(option);
                 });
                 
+                // Add event listener for real-time sensor selection
+                sensorSelect.addEventListener('change', function() {
+                    const selectedPort = this.value;
+                    onSensorSelectionChange(selectedPort);
+                });
+                
                 return result.data;
             } else {
                 throw new Error('Failed to load sensors');
+            }
+        }
+        
+        async function onSensorSelectionChange(selectedPort) {
+            showLoading(true);
+            try {
+                // Update sensor indicator in header
+                updateSensorIndicator(selectedPort);
+                
+                // Update dashboard data for selected sensor
+                await loadDashboardData(selectedPort);
+                
+                // Update measurements table for selected sensor
+                if (selectedPort) {
+                    const response = await fetch(`/api/measurements?port=${encodeURIComponent(selectedPort)}&limit=50`);
+                    const result = await response.json();
+                    if (result.success) {
+                        currentData = result.data;
+                        updateMeasurementsTable(result.data);
+                        document.getElementById('records-count').textContent = result.data.length;
+                    }
+                } else {
+                    // Load all measurements
+                    await loadMeasurements(50);
+                }
+                
+                const sensorText = selectedPort ? `cảm biến ${selectedPort}` : 'tất cả cảm biến';
+                showStatus('success', `Đã cập nhật dữ liệu cho ${sensorText}`);
+            } catch (error) {
+                console.error('Error updating sensor data:', error);
+                showStatus('danger', 'Lỗi khi cập nhật dữ liệu cảm biến');
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        function updateSensorIndicator(selectedPort) {
+            const indicator = document.getElementById('sensor-indicator');
+            if (selectedPort) {
+                indicator.textContent = `📍 ${selectedPort}`;
+                indicator.classList.remove('d-none');
+            } else {
+                indicator.classList.add('d-none');
             }
         }
         
@@ -708,8 +788,10 @@
         function clearDateFilter() {
             setDefaultDates();
             document.getElementById('sensor-filter').value = '';
+            updateSensorIndicator(''); // Clear the indicator
+            // Reset to all sensors view
             loadMeasurements(currentLimit);
-            loadDashboardData();
+            loadDashboardData(); // This will load data for all sensors since sensor-filter is cleared
             showStatus('info', 'Đã xóa bộ lọc và tải lại dữ liệu mặc định');
         }
         
@@ -731,8 +813,20 @@
                 
                 realtimeInterval = setInterval(async () => {
                     try {
-                        await loadMeasurements(currentLimit);
-                        await loadDashboardData();
+                        const selectedPort = document.getElementById('sensor-filter').value;
+                        await loadDashboardData(selectedPort);
+                        
+                        if (selectedPort) {
+                            const response = await fetch(`/api/measurements?port=${encodeURIComponent(selectedPort)}&limit=${currentLimit}`);
+                            const result = await response.json();
+                            if (result.success) {
+                                currentData = result.data;
+                                updateMeasurementsTable(result.data);
+                                document.getElementById('records-count').textContent = result.data.length;
+                            }
+                        } else {
+                            await loadMeasurements(currentLimit);
+                        }
                     } catch (error) {
                         console.error('Realtime update error:', error);
                     }
@@ -744,14 +838,40 @@
         
         async function loadMoreData() {
             currentLimit += 50;
-            await loadMeasurements(currentLimit);
+            const selectedPort = document.getElementById('sensor-filter').value;
+            
+            if (selectedPort) {
+                const response = await fetch(`/api/measurements?port=${encodeURIComponent(selectedPort)}&limit=${currentLimit}`);
+                const result = await response.json();
+                if (result.success) {
+                    currentData = result.data;
+                    updateMeasurementsTable(result.data);
+                    document.getElementById('records-count').textContent = result.data.length;
+                }
+            } else {
+                await loadMeasurements(currentLimit);
+            }
+            
             showStatus('info', `Đã tải thêm dữ liệu. Tổng cộng: ${currentData.length} bản ghi`);
         }
         
         async function refreshData() {
             showLoading(true);
             try {
-                await initializeDashboard();
+                const selectedPort = document.getElementById('sensor-filter').value;
+                await Promise.all([
+                    loadDashboardData(selectedPort),
+                    loadSensors(),
+                    selectedPort ? 
+                        fetch(`/api/measurements?port=${encodeURIComponent(selectedPort)}&limit=50`).then(r => r.json()).then(result => {
+                            if (result.success) {
+                                currentData = result.data;
+                                updateMeasurementsTable(result.data);
+                                document.getElementById('records-count').textContent = result.data.length;
+                            }
+                        }) :
+                        loadMeasurements()
+                ]);
                 showStatus('success', 'Đã làm mới dữ liệu thành công!');
             } catch (error) {
                 showStatus('danger', 'Lỗi khi làm mới dữ liệu');

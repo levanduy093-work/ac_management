@@ -217,18 +217,51 @@ async def get_measurements_by_date_range(
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/dashboard")
-async def get_dashboard_data():
-    """Get comprehensive dashboard data"""
+async def get_dashboard_data(
+    port: Optional[str] = Query(None, description="Filter by sensor port")
+):
+    """Get comprehensive dashboard data, optionally filtered by sensor"""
     try:
         # Get all dashboard data in one call
         stats = database.get_database_stats()
         sensors = database.get_sensor_summary()
-        latest_measurements = database.get_latest_measurements(50)
         
-        # Calculate summary statistics
-        total_power = sum(m['power'] for m in latest_measurements if m['power'])
-        total_energy = sum(m['energy'] for m in latest_measurements if m['energy'])
-        avg_voltage = sum(m['voltage'] for m in latest_measurements if m['voltage']) / len(latest_measurements) if latest_measurements else 0
+        # Get measurements - filtered by port if specified
+        if port:
+            latest_measurements = database.get_measurements_by_port(port, 50)
+            # Filter sensors to only include the selected one
+            selected_sensors = [s for s in sensors if s['port'] == port]
+        else:
+            latest_measurements = database.get_latest_measurements(50)
+            selected_sensors = sensors
+        
+        # Calculate summary statistics for selected data
+        if latest_measurements:
+            if port:
+                # Single sensor - latest_measurements already filtered by port from database
+                # Take the most recent measurement (first item, already sorted by timestamp DESC)
+                latest = latest_measurements[0]
+                total_power = latest['power'] if latest['power'] is not None else 0.0
+                total_energy = latest['energy'] if latest['energy'] is not None else 0.0
+                avg_voltage = latest['voltage'] if latest['voltage'] is not None else 0.0
+                sensor_count = 1
+            else:
+                # All sensors - aggregate data from all sensors
+                # Group by port to get latest measurement per sensor for power calculation
+                sensor_latest = {}
+                for m in latest_measurements:
+                    if m['port'] not in sensor_latest:
+                        sensor_latest[m['port']] = m
+                
+                total_power = sum(m['power'] for m in sensor_latest.values() if m['power'])
+                total_energy = sum(m['energy'] for m in sensor_latest.values() if m['energy'])
+                avg_voltage = sum(m['voltage'] for m in sensor_latest.values() if m['voltage']) / len(sensor_latest) if sensor_latest else 0
+                sensor_count = len(selected_sensors)
+        else:
+            total_power = 0
+            total_energy = 0
+            avg_voltage = 0
+            sensor_count = len(selected_sensors)
         
         # Get last 24 hours data for charts
         cutoff_time = datetime.now() - timedelta(hours=24)
@@ -247,7 +280,8 @@ async def get_dashboard_data():
                     "total_power": total_power,
                     "total_energy": total_energy,
                     "avg_voltage": avg_voltage,
-                    "sensor_count": len(sensors)
+                    "sensor_count": sensor_count,
+                    "selected_port": port
                 },
                 "chart_data": chart_data
             }
@@ -318,6 +352,34 @@ async def get_sensor_stats(sensor_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+def generate_export_filename(format_ext: str, port: Optional[str] = None, days: Optional[int] = None) -> str:
+    """Generate descriptive filename for exports"""
+    now = datetime.now()
+    timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
+    
+    filename = "PZEM004T"
+    
+    # Add sensor info
+    if port:
+        port_name = port.replace('/dev/', '').replace('/', '_')
+        filename += f"_{port_name}"
+    else:
+        filename += "_ALL_SENSORS"
+    
+    # Add time range info
+    if days:
+        filename += f"_last_{days}days"
+    else:
+        filename += "_all_time"
+    
+    # Add timestamp
+    filename += f"_{timestamp}"
+    
+    # Add extension
+    filename += f".{format_ext}"
+    
+    return filename
+
 @app.get("/api/export/csv")
 async def export_csv(
     port: Optional[str] = Query(None, description="Filter by sensor port"),
@@ -350,9 +412,8 @@ async def export_csv(
             writer.writerows(data)
             temp_filename = temp_file.name
         
-        # Generate filename
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"pzem_data_{timestamp}.csv"
+        # Generate descriptive filename
+        filename = generate_export_filename("csv", port, days)
         
         return FileResponse(
             temp_filename,
@@ -398,9 +459,8 @@ async def export_json(
             }, temp_file, indent=2)
             temp_filename = temp_file.name
         
-        # Generate filename
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"pzem_data_{timestamp}.json"
+        # Generate descriptive filename
+        filename = generate_export_filename("json", port, days)
         
         return FileResponse(
             temp_filename,

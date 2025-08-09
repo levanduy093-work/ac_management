@@ -214,23 +214,7 @@
                         </div>
                     </div>
                     
-                    <!-- Record Limit -->
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-floating">
-                                <input type="number" class="form-control" id="record-limit" placeholder="Để trống = tất cả">
-                                <label for="record-limit">Giới hạn số bản ghi (tùy chọn)</label>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-check form-switch" style="padding-top: 1rem;">
-                                <input class="form-check-input" type="checkbox" id="separate-files">
-                                <label class="form-check-label" for="separate-files">
-                                    Tách file theo cảm biến
-                                </label>
-                            </div>
-                        </div>
-                    </div>
+
                 </div>
             </div>
         </div>
@@ -496,17 +480,51 @@
                 params.append('days', timeFilter);
             }
             
-            // Record limit
-            const recordLimit = document.getElementById('record-limit').value;
-            if (recordLimit) {
-                params.append('limit', recordLimit);
-            } else {
-                params.append('limit', '10000'); // Default large limit
-            }
+            // Always set a reasonable limit for exports
+            params.append('limit', '50000'); // Large default limit for export
             
             return params;
         }
         
+        function generateFilename(format) {
+            const now = new Date();
+            const timestamp = now.toISOString().replace(/[:.]/g, '-').split('T')[0] + '_' + 
+                             now.toTimeString().slice(0,8).replace(/:/g, '-');
+            
+            let filename = 'PZEM004T';
+            
+            // Add sensor info if specific sensor selected
+            const sensorPort = document.getElementById('sensor-filter').value;
+            if (sensorPort) {
+                const portName = sensorPort.replace('/dev/', '').replace('/', '_');
+                filename += `_${portName}`;
+            } else {
+                filename += '_ALL_SENSORS';
+            }
+            
+            // Add time range info
+            const timeFilter = document.getElementById('time-filter').value;
+            if (timeFilter === 'custom') {
+                const startDate = document.getElementById('start-date').value;
+                const endDate = document.getElementById('end-date').value;
+                if (startDate && endDate) {
+                    filename += `_${startDate}_to_${endDate}`;
+                }
+            } else if (timeFilter) {
+                filename += `_last_${timeFilter}days`;
+            } else {
+                filename += '_all_time';
+            }
+            
+            // Add timestamp
+            filename += `_${timestamp}`;
+            
+            // Add extension
+            filename += `.${format}`;
+            
+            return filename;
+        }
+
         function buildExportUrl(format) {
             let url = `/api/export/${format}`;
             const params = buildQueryParams();
@@ -544,15 +562,13 @@
                 showStatus('info', 'Đang chuẩn bị file tải xuống...');
                 
                 const exportConfig = buildExportUrl(format);
+                const filename = generateFilename(format);
                 
                 if (exportConfig.type === 'range') {
                     // Handle custom date range export differently
-                    await exportDateRange(exportConfig);
+                    await exportDateRange(exportConfig, filename);
                 } else {
                     // Direct export
-                    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-                    const filename = `pzem_data_${timestamp}.${format}`;
-                    
                     // Create temporary link and trigger download
                     const link = document.createElement('a');
                     link.href = exportConfig.url;
@@ -561,7 +577,7 @@
                     link.click();
                     document.body.removeChild(link);
                     
-                    showStatus('success', `Đã bắt đầu tải xuống file ${format.toUpperCase()}`);
+                    showStatus('success', `Đã bắt đầu tải xuống file ${filename}`);
                 }
             } catch (error) {
                 console.error('Export error:', error);
@@ -571,7 +587,7 @@
             }
         }
         
-        async function exportDateRange(config) {
+        async function exportDateRange(config, filename) {
             // Get data first, then create file
             const response = await fetch(config.url);
             const result = await response.json();
@@ -581,8 +597,6 @@
             }
             
             const data = result.data;
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-            const filename = `pzem_data_${timestamp}.${config.format}`;
             
             let content, mimeType;
             
@@ -593,6 +607,13 @@
                 content = JSON.stringify({
                     export_timestamp: new Date().toISOString(),
                     total_records: data.length,
+                    sensor_info: {
+                        port: document.getElementById('sensor-filter').value || 'all',
+                        time_range: {
+                            start: document.getElementById('start-date').value,
+                            end: document.getElementById('end-date').value
+                        }
+                    },
                     data: data
                 }, null, 2);
                 mimeType = 'application/json';
@@ -609,7 +630,7 @@
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
             
-            showStatus('success', `Đã tải xuống ${data.length} bản ghi dưới định dạng ${config.format.toUpperCase()}`);
+            showStatus('success', `Đã tải xuống ${data.length} bản ghi dưới tên file: ${filename}`);
         }
         
         function convertToCSV(data) {
