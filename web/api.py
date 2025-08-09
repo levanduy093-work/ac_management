@@ -218,7 +218,9 @@ async def get_measurements_by_date_range(
 
 @app.get("/api/dashboard")
 async def get_dashboard_data(
-    port: Optional[str] = Query(None, description="Filter by sensor port")
+    port: Optional[str] = Query(None, description="Filter by sensor port"),
+    start_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)")
 ):
     """Get comprehensive dashboard data, optionally filtered by sensor"""
     try:
@@ -263,12 +265,33 @@ async def get_dashboard_data(
             avg_voltage = 0
             sensor_count = len(selected_sensors)
         
-        # Get last 24 hours data for charts
-        cutoff_time = datetime.now() - timedelta(hours=24)
-        chart_data = [
-            record for record in latest_measurements 
-            if datetime.strptime(record['timestamp'], '%Y-%m-%d %H:%M:%S') >= cutoff_time
-        ]
+        # Build chart data
+        chart_data: List[Dict]
+        if start_date and end_date:
+            # If date range is provided, return full data for that range
+            try:
+                start_dt = datetime.strptime(start_date, '%Y-%m-%d')
+                end_dt = datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1)
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+
+            # Pull a large window then filter by date range
+            if port:
+                range_source = database.get_measurements_by_port(port, 100000)
+            else:
+                range_source = database.get_latest_measurements(100000)
+
+            chart_data = [
+                r for r in range_source
+                if start_dt <= datetime.strptime(r['timestamp'], '%Y-%m-%d %H:%M:%S') <= end_dt
+            ]
+        else:
+            # Default: last 24 hours from the available latest measurements
+            cutoff_time = datetime.now() - timedelta(hours=24)
+            chart_data = [
+                record for record in latest_measurements 
+                if datetime.strptime(record['timestamp'], '%Y-%m-%d %H:%M:%S') >= cutoff_time
+            ]
         
         return {
             "success": True,

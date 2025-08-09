@@ -272,6 +272,14 @@
             </div>
         </div>
 
+        <!-- Charts Controls -->
+        <div class="d-flex justify-content-end mb-2">
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="full-day-switch">
+                <label class="form-check-label" for="full-day-switch">Hiển thị đủ 24h</label>
+            </div>
+        </div>
+
         <!-- Charts Row -->
         <div class="row">
             <div class="col-xl-6 col-lg-12">
@@ -337,7 +345,7 @@
                         </div>
                         <div>
                             <button class="btn btn-outline-primary btn-sm" onclick="loadMoreData()">
-                                <i class="bi bi-arrow-down-circle"></i> Tải thêm dữ liệu
+                                <i class="bi bi-arrow-down-circle"></i> Hiển thị thêm
                             </button>
                         </div>
                     </div>
@@ -355,7 +363,9 @@
         let isRealtimeEnabled = false;
         let realtimeInterval;
         let currentData = [];
-        let currentLimit = 50;
+        let currentLimit = 6;
+        let isFullDayView = false;
+        let lastRawChartData = [];
         let ws = null;
         let reconnectInterval = null;
         
@@ -425,6 +435,13 @@
             setDefaultDates();
             initializeCharts();
             initializeDashboard();
+            const fullDaySwitch = document.getElementById('full-day-switch');
+            if (fullDaySwitch) {
+                fullDaySwitch.addEventListener('change', (e) => {
+                    isFullDayView = e.target.checked;
+                    updateCharts(lastRawChartData);
+                });
+            }
         });
         
         function setDefaultDates() {
@@ -440,8 +457,14 @@
                 await loadSensors();
                 // Load stats cards (aggregated), independent of date range
                 await loadDashboardData();
-                // Load and render today's data by default
+                // Preload charts with correct full selected day first to avoid flicker
                 await applyDateFilter();
+                // Load latest measurements with default limit for table
+                await loadMeasurements(currentLimit);
+                // Enable realtime by default
+                if (!isRealtimeEnabled) {
+                    toggleRealtime();
+                }
                 showStatus('success', 'Dashboard đã tải thành công!');
             } catch (error) {
                 console.error('Error initializing dashboard:', error);
@@ -453,10 +476,17 @@
         
         async function loadDashboardData(selectedPort = null) {
             let url = '/api/dashboard';
-            if (selectedPort) {
-                url += `?port=${encodeURIComponent(selectedPort)}`;
+            const startDate = document.getElementById('start-date').value;
+            const endDate = document.getElementById('end-date').value;
+
+            const params = new URLSearchParams();
+            if (selectedPort) params.append('port', selectedPort);
+            if (startDate && endDate) {
+                params.append('start_date', startDate);
+                params.append('end_date', endDate);
             }
-            
+            if (params.toString()) url += `?${params.toString()}`;
+
             const response = await fetch(url);
             const result = await response.json();
             
@@ -498,9 +528,8 @@
                     document.querySelector('#sensor-count').closest('.stat-card').querySelector('.label').textContent = 'SỐ CẢM BIẾN';
                 }
                 
-                // Update charts with recent data
-                updateCharts(data.chart_data);
-                
+                // Charts are updated via date-range fetch to avoid brief zoom to recent minutes
+
                 return data;
             } else {
                 throw new Error('Failed to load dashboard data');
@@ -539,22 +568,35 @@
             try {
                 // Update sensor indicator in header
                 updateSensorIndicator(selectedPort);
-                
-                // Update dashboard data for selected sensor
+
+                // Keep charts in full selected-day context first (avoid quick zoom)
+                const startDate = document.getElementById('start-date').value;
+                const endDate = document.getElementById('end-date').value;
+                if (startDate && endDate) {
+                    let url = `/api/measurements/range?start_date=${startDate}&end_date=${endDate}`;
+                    if (selectedPort) url += `&port=${encodeURIComponent(selectedPort)}`;
+                    const response = await fetch(url);
+                    const result = await response.json();
+                    if (result.success) {
+                        updateCharts(result.data);
+                    }
+                }
+
+                // Update dashboard data for selected sensor (stats)
                 await loadDashboardData(selectedPort);
                 
                 // Update measurements table for selected sensor
                 if (selectedPort) {
-                    const response = await fetch(`/api/measurements?port=${encodeURIComponent(selectedPort)}&limit=50`);
+                    const response = await fetch(`/api/measurements?port=${encodeURIComponent(selectedPort)}&limit=${currentLimit}`);
                     const result = await response.json();
                     if (result.success) {
                         currentData = result.data;
                         updateMeasurementsTable(result.data);
-                        document.getElementById('records-count').textContent = result.data.length;
+                        document.getElementById('records-count').textContent = Math.min(result.data.length, currentLimit);
                     }
                 } else {
                     // Load all measurements
-                    await loadMeasurements(50);
+                    await loadMeasurements(currentLimit);
                 }
                 
                 const sensorText = selectedPort ? `cảm biến ${selectedPort}` : 'tất cả cảm biến';
@@ -577,14 +619,14 @@
             }
         }
         
-        async function loadMeasurements(limit = 50) {
+        async function loadMeasurements(limit = 6) {
             const response = await fetch(`/api/measurements?limit=${limit}`);
             const result = await response.json();
             
             if (result.success) {
                 currentData = result.data;
                 updateMeasurementsTable(result.data);
-                document.getElementById('records-count').textContent = result.data.length;
+                document.getElementById('records-count').textContent = Math.min(result.data.length, currentLimit);
                 return result.data;
             } else {
                 throw new Error('Failed to load measurements');
@@ -595,7 +637,8 @@
             const tbody = document.getElementById('measurements-tbody');
             tbody.innerHTML = '';
             
-            data.forEach(record => {
+            const limitedData = data.slice(0, currentLimit);
+            limitedData.forEach(record => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${new Date(record.timestamp).toLocaleString('vi-VN')}</td>
@@ -768,8 +811,20 @@
             });
         }
         
+        function getSelectedDateRangeBounds() {
+            const startDateStr = document.getElementById('start-date').value;
+            const endDateStr = document.getElementById('end-date').value;
+            if (!startDateStr || !endDateStr) {
+                return { min: null, max: null };
+            }
+            const min = new Date(`${startDateStr}T00:00:00`);
+            const max = new Date(`${endDateStr}T23:59:59`);
+            return { min, max };
+        }
+
         function updateCharts(data) {
             if (!data || data.length === 0) return;
+            lastRawChartData = data;
 
             // Always sort ascending by time
             const sorted = sortByTimestampAsc(data);
@@ -791,6 +846,23 @@
             powerChart.data.datasets[0].data = powerPoints;
             voltageCurrentChart.data.datasets[0].data = voltagePoints;
             voltageCurrentChart.data.datasets[1].data = currentPoints;
+
+            // Control x-axis range based on toggle
+            if (isFullDayView) {
+                const { min, max } = getSelectedDateRangeBounds();
+                if (min && max) {
+                    powerChart.options.scales.x.min = min;
+                    powerChart.options.scales.x.max = max;
+                    voltageCurrentChart.options.scales.x.min = min;
+                    voltageCurrentChart.options.scales.x.max = max;
+                }
+            } else {
+                // Fit to data extents
+                powerChart.options.scales.x.min = undefined;
+                powerChart.options.scales.x.max = undefined;
+                voltageCurrentChart.options.scales.x.min = undefined;
+                voltageCurrentChart.options.scales.x.max = undefined;
+            }
 
             powerChart.update();
             voltageCurrentChart.update();
@@ -820,7 +892,7 @@
                     currentData = result.data;
                     updateMeasurementsTable(result.data);
                     updateCharts(result.data);
-                    document.getElementById('records-count').textContent = result.data.length;
+                    document.getElementById('records-count').textContent = Math.min(result.data.length, currentLimit);
                     showStatus('success', `Đã tải ${result.data.length} bản ghi trong khoảng thời gian đã chọn`);
                 } else {
                     showStatus('danger', 'Lỗi khi lọc dữ liệu');
@@ -840,6 +912,7 @@
             // Reset to all sensors view
             loadMeasurements(currentLimit);
             loadDashboardData(); // This will load data for all sensors since sensor-filter is cleared
+            applyDateFilter(); // Ensure charts show full-day by default
             showStatus('info', 'Đã xóa bộ lọc và tải lại dữ liệu mặc định');
         }
         
@@ -862,6 +935,20 @@
                 realtimeInterval = setInterval(async () => {
                     try {
                         const selectedPort = document.getElementById('sensor-filter').value;
+                        // Update charts for full selected day FIRST to avoid flicker
+                        const startDate = document.getElementById('start-date').value;
+                        const endDate = document.getElementById('end-date').value;
+                        if (startDate && endDate) {
+                            let url = `/api/measurements/range?start_date=${startDate}&end_date=${endDate}`;
+                            if (selectedPort) url += `&port=${encodeURIComponent(selectedPort)}`;
+                            const resp = await fetch(url);
+                            const resJson = await resp.json();
+                            if (resJson.success) {
+                                updateCharts(resJson.data);
+                            }
+                        }
+
+                        // Then refresh stats/cards and table data
                         await loadDashboardData(selectedPort);
                         
                         if (selectedPort) {
@@ -870,7 +957,7 @@
                             if (result.success) {
                                 currentData = result.data;
                                 updateMeasurementsTable(result.data);
-                                document.getElementById('records-count').textContent = result.data.length;
+                                document.getElementById('records-count').textContent = Math.min(result.data.length, currentLimit);
                             }
                         } else {
                             await loadMeasurements(currentLimit);
@@ -885,7 +972,7 @@
         }
         
         async function loadMoreData() {
-            currentLimit += 50;
+            currentLimit += 6;
             const selectedPort = document.getElementById('sensor-filter').value;
             
             if (selectedPort) {
@@ -894,7 +981,7 @@
                 if (result.success) {
                     currentData = result.data;
                     updateMeasurementsTable(result.data);
-                    document.getElementById('records-count').textContent = result.data.length;
+                    document.getElementById('records-count').textContent = Math.min(result.data.length, currentLimit);
                 }
             } else {
                 await loadMeasurements(currentLimit);
@@ -910,15 +997,16 @@
                 await Promise.all([
                     loadDashboardData(selectedPort),
                     loadSensors(),
+                    applyDateFilter(),
                     selectedPort ? 
-                        fetch(`/api/measurements?port=${encodeURIComponent(selectedPort)}&limit=50`).then(r => r.json()).then(result => {
+                        fetch(`/api/measurements?port=${encodeURIComponent(selectedPort)}&limit=${currentLimit}`).then(r => r.json()).then(result => {
                             if (result.success) {
                                 currentData = result.data;
                                 updateMeasurementsTable(result.data);
-                                document.getElementById('records-count').textContent = result.data.length;
+                                document.getElementById('records-count').textContent = Math.min(result.data.length, currentLimit);
                             }
                         }) :
-                        loadMeasurements()
+                        loadMeasurements(currentLimit)
                 ]);
                 showStatus('success', 'Đã làm mới dữ liệu thành công!');
             } catch (error) {
