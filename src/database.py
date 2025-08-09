@@ -343,9 +343,13 @@ class PZEMDatabase:
             cursor.execute('SELECT COUNT(*) FROM sensors')
             total_sensors = cursor.fetchone()[0]
             
-            # Get database size
-            cursor.execute('SELECT page_count * page_size as size FROM pragma_page_count(), pragma_page_size()')
-            db_size = cursor.fetchone()[0]
+            # Get database size from actual file size
+            try:
+                db_size = os.path.getsize(self.db_path)
+            except OSError:
+                # Fallback to SQLite pragma if file size cannot be read
+                cursor.execute('SELECT page_count * page_size as size FROM pragma_page_count(), pragma_page_size()')
+                db_size = cursor.fetchone()[0]
             
             # Get oldest and newest measurements
             cursor.execute('''
