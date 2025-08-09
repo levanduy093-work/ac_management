@@ -457,6 +457,11 @@
                     updateSensorStatus(message.data);
                     break;
                     
+                case 'database_update':
+                    // Refresh database stats when data changes
+                    setTimeout(refreshDatabaseStats, 500);
+                    break;
+                    
                 default:
                     console.log('Unknown message type:', message.type);
             }
@@ -574,6 +579,9 @@
             
             // Set API base URL
             document.getElementById('api-base-url').textContent = window.location.origin;
+            
+            // Auto refresh database stats every 30 seconds
+            setInterval(refreshDatabaseStats, 30000);
         });
         
         async function initializeSettings() {
@@ -653,7 +661,7 @@
         
         async function refreshDatabaseStats() {
             try {
-                const response = await fetch('/api/stats');
+                const response = await fetch('/api/database/stats');
                 const result = await response.json();
                 
                 if (result.success) {

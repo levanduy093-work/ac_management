@@ -120,6 +120,18 @@ async def get_database_stats():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/database/stats")
+async def get_database_stats_detailed():
+    """Get detailed database statistics (alternative endpoint)"""
+    try:
+        stats = database.get_database_stats()
+        return {
+            "success": True,
+            "data": stats
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/sensors")
 async def get_sensors():
     """Get sensor summary"""
