@@ -153,6 +153,13 @@ class PZEMDatabase:
                     sensor_data['alarm']
                 ))
                 
+                # Update sensor last_seen timestamp when new measurement is added
+                cursor.execute('''
+                    UPDATE sensors 
+                    SET last_seen = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                ''', (sensor_id,))
+                
                 return True
                 
         except Exception as e:

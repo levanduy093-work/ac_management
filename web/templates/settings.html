@@ -542,8 +542,9 @@
                     
                     let html = '';
                     sensors.forEach(sensor => {
-                        const lastSeen = new Date(sensor.last_seen);
-                        const isOnline = (Date.now() - lastSeen.getTime()) < 300000; // 5 minutes
+                        // Use last_measurement instead of last_seen for online status
+                        const lastMeasurement = sensor.last_measurement ? new Date(sensor.last_measurement) : new Date(sensor.last_seen);
+                        const isOnline = (Date.now() - lastMeasurement.getTime()) < 600000; // 10 minutes
                         
                         html += `
                             <div class="sensor-card">
@@ -561,7 +562,7 @@
                                         </span>
                                     </div>
                                     <div class="col-md-3">
-                                        <small class="text-muted">Lần cuối: ${lastSeen.toLocaleString('vi-VN')}</small>
+                                        <small class="text-muted">Lần cuối: ${lastMeasurement.toLocaleString('vi-VN')}</small>
                                     </div>
                                     <div class="col-md-2">
                                         <small class="text-muted">${sensor.total_measurements.toLocaleString()} readings</small>
