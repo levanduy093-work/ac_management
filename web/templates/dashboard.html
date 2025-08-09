@@ -422,27 +422,26 @@
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {
             connectWebSocket();
-            initializeDashboard();
-            initializeCharts();
             setDefaultDates();
+            initializeCharts();
+            initializeDashboard();
         });
         
         function setDefaultDates() {
             const today = new Date();
-            const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-            
-            document.getElementById('start-date').value = weekAgo.toISOString().split('T')[0];
-            document.getElementById('end-date').value = today.toISOString().split('T')[0];
+            const iso = today.toISOString().split('T')[0];
+            document.getElementById('start-date').value = iso;
+            document.getElementById('end-date').value = iso;
         }
         
         async function initializeDashboard() {
             showLoading(true);
             try {
-                await Promise.all([
-                    loadDashboardData(),
-                    loadSensors(),
-                    loadMeasurements()
-                ]);
+                await loadSensors();
+                // Load stats cards (aggregated), independent of date range
+                await loadDashboardData();
+                // Load and render today's data by default
+                await applyDateFilter();
                 showStatus('success', 'Dashboard đã tải thành công!');
             } catch (error) {
                 console.error('Error initializing dashboard:', error);
@@ -617,6 +616,42 @@
             });
         }
         
+        // ==== Helpers for chart data preparation ====
+        function sortByTimestampAsc(records) {
+            return [...records].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        }
+
+        // Aggregate multiple sensors into 1-minute buckets
+        // - power: sum
+        // - current: sum
+        // - voltage: average
+        function aggregateByMinute(records) {
+            const ONE_MINUTE_MS = 60 * 1000;
+            const buckets = new Map();
+            for (const r of records) {
+                const ts = new Date(r.timestamp);
+                // normalize to start of minute
+                ts.setSeconds(0, 0);
+                const key = ts.getTime();
+                if (!buckets.has(key)) {
+                    buckets.set(key, { t: new Date(key), n: 0, power: 0, voltage: 0, current: 0 });
+                }
+                const b = buckets.get(key);
+                b.n += 1;
+                b.power += Number(r.power) || 0;
+                b.current += Number(r.current) || 0;
+                b.voltage += Number(r.voltage) || 0;
+            }
+            return Array.from(buckets.values())
+                .sort((a, b) => a.t - b.t)
+                .map(b => ({
+                    timestamp: b.t,
+                    power: b.power,
+                    voltage: b.n ? b.voltage / b.n : 0,
+                    current: b.current
+                }));
+        }
+        
         function initializeCharts() {
             // Power Chart
             const powerCtx = document.getElementById('powerChart').getContext('2d');
@@ -635,6 +670,8 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    spanGaps: true,
+                    elements: { point: { radius: 0 } },
                     scales: {
                         x: {
                             type: 'time',
@@ -655,7 +692,8 @@
                     plugins: {
                         legend: {
                             display: true
-                        }
+                        },
+                        decimation: { enabled: true, algorithm: 'min-max' }
                     }
                 }
             });
@@ -687,6 +725,8 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    spanGaps: true,
+                    elements: { point: { radius: 0 } },
                     scales: {
                         x: {
                             type: 'time',
@@ -721,7 +761,8 @@
                     plugins: {
                         legend: {
                             display: true
-                        }
+                        },
+                        decimation: { enabled: true, algorithm: 'min-max' }
                     }
                 }
             });
@@ -729,22 +770,29 @@
         
         function updateCharts(data) {
             if (!data || data.length === 0) return;
-            
-            // Prepare data for charts
-            const chartData = data.map(record => ({
-                x: new Date(record.timestamp),
-                power: record.power,
-                voltage: record.voltage,
-                current: record.current
+
+            // Always sort ascending by time
+            const sorted = sortByTimestampAsc(data);
+
+            // If showing all sensors, aggregate by minute to avoid zig-zag between sensors
+            const isAllSensors = !document.getElementById('sensor-filter').value;
+            const prepared = isAllSensors ? aggregateByMinute(sorted) : sorted.map(r => ({
+                timestamp: new Date(r.timestamp),
+                power: r.power,
+                voltage: r.voltage,
+                current: r.current
             }));
-            
-            // Update power chart
-            powerChart.data.datasets[0].data = chartData.map(d => ({x: d.x, y: d.power}));
+
+            // Build chart points
+            const powerPoints = prepared.map(d => ({ x: new Date(d.timestamp), y: d.power }));
+            const voltagePoints = prepared.map(d => ({ x: new Date(d.timestamp), y: d.voltage }));
+            const currentPoints = prepared.map(d => ({ x: new Date(d.timestamp), y: d.current }));
+
+            powerChart.data.datasets[0].data = powerPoints;
+            voltageCurrentChart.data.datasets[0].data = voltagePoints;
+            voltageCurrentChart.data.datasets[1].data = currentPoints;
+
             powerChart.update();
-            
-            // Update voltage & current chart
-            voltageCurrentChart.data.datasets[0].data = chartData.map(d => ({x: d.x, y: d.voltage}));
-            voltageCurrentChart.data.datasets[1].data = chartData.map(d => ({x: d.x, y: d.current}));
             voltageCurrentChart.update();
         }
         
