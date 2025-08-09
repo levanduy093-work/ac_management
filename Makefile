@@ -1,6 +1,6 @@
 # Makefile for PZEM-004T Power Monitoring Project
 
-.PHONY: help install install-dev test clean lint format docs run-monitor run-reset
+.PHONY: help install install-dev test clean lint format docs run-monitor run-reset run-web
 
 # Default target
 help:
@@ -25,6 +25,8 @@ help:
 	@echo "  migrate-csv  - Migrate CSV data to database"
 	@echo "  migrate-csv-dry - Dry run CSV migration"
 	@echo "  db-gui       - Interactive database GUI tool"
+	@echo "  run-web      - Start web dashboard server"
+	@echo "  run-web-dev  - Start web server in development mode"
 
 # Install dependencies
 install:
@@ -113,9 +115,16 @@ migrate-csv-dry:
 db-gui:
 	python tools/database_gui.py
 
+# Web Dashboard
+run-web:
+	python run_web.py
+
+run-web-dev:
+	python run_web.py --reload
+
 # Quick start
 quick-start: install
 	@echo "Installation complete!"
-	@echo "Run 'make run-monitor' to start monitoring (CSV storage)"
 	@echo "Run 'make run-monitor-db' to start monitoring (Database storage)"
+	@echo "Run 'make run-web' to start web dashboard"
 	@echo "Run 'make run-reset' to reset energy counters" 

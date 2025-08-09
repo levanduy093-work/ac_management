@@ -1,3 +1,9 @@
 pyserial
 tabulate
 pandas
+fastapi
+uvicorn
+websockets
+jinja2
+python-multipart
+aiofiles

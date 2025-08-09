@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔌 PZEM-004T Monitoring Dashboard</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Date adapter for Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --success-color: #198754;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --dark-color: #212529;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .dashboard-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #495057 100%);
+            color: white;
+            padding: 1.5rem 0;
+            border-radius: 0 0 15px 15px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            border: none;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .stat-card .icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-card .label {
+            color: #6c757d;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            height: 400px;
+        }
+        
+        .data-table-container {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+        
+        .btn-modern {
+            border-radius: 25px;
+            padding: 0.5rem 1.5rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: none;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-modern:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        
+        .status-online {
+            color: var(--success-color);
+        }
+        
+        .status-offline {
+            color: var(--danger-color);
+        }
+        
+        .loading-spinner {
+            display: none;
+        }
+        
+        .alert-modern {
+            border-radius: 15px;
+            border: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        
+        .table-modern {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .table-modern th {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #495057 100%);
+            color: white;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.85rem;
+        }
+        
+        .sensor-badge {
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .alarm-on {
+            background: var(--danger-color);
+            color: white;
+        }
+        
+        .alarm-off {
+            background: var(--success-color);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="dashboard-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h1 class="mb-0">
+                        <i class="bi bi-lightning-charge"></i>
+                        PZEM-004T Dashboard
+                    </h1>
+                    <p class="mb-0 opacity-75">Hệ thống giám sát điện năng thời gian thực</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <div class="d-flex flex-wrap justify-content-md-end gap-2">
+                        <button class="btn btn-light btn-modern" onclick="refreshData()">
+                            <i class="bi bi-arrow-clockwise"></i> Làm mới
+                        </button>
+                        <a href="/export" class="btn btn-warning btn-modern">
+                            <i class="bi bi-download"></i> Xuất dữ liệu
+                        </a>
+                        <a href="/settings" class="btn btn-info btn-modern">
+                            <i class="bi bi-gear"></i> Cài đặt
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <!-- Status Alert -->
+        <div id="status-alert" class="alert alert-modern d-none" role="alert"></div>
+        
+        <!-- Loading Spinner -->
+        <div id="loading-spinner" class="text-center loading-spinner">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Đang tải...</span>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="row" id="stats-cards">
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card text-center">
+                    <div class="icon text-primary">
+                        <i class="bi bi-lightning-charge-fill"></i>
+                    </div>
+                    <div class="value text-primary" id="total-power">0 W</div>
+                    <div class="label">Tổng công suất</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card text-center">
+                    <div class="icon text-success">
+                        <i class="bi bi-battery-charging"></i>
+                    </div>
+                    <div class="value text-success" id="total-energy">0 kWh</div>
+                    <div class="label">Tổng năng lượng</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card text-center">
+                    <div class="icon text-warning">
+                        <i class="bi bi-speedometer"></i>
+                    </div>
+                    <div class="value text-warning" id="avg-voltage">0 V</div>
+                    <div class="label">Điện áp trung bình</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card text-center">
+                    <div class="icon text-info">
+                        <i class="bi bi-hdd-network"></i>
+                    </div>
+                    <div class="value text-info" id="sensor-count">0</div>
+                    <div class="label">Số cảm biến</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Date Filter Row -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-3">
+                                <label for="start-date" class="form-label">Từ ngày:</label>
+                                <input type="date" class="form-control" id="start-date">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="end-date" class="form-label">Đến ngày:</label>
+                                <input type="date" class="form-control" id="end-date">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="sensor-filter" class="form-label">Cảm biến:</label>
+                                <select class="form-select" id="sensor-filter">
+                                    <option value="">Tất cả cảm biến</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end gap-2">
+                                <button class="btn btn-primary btn-modern" onclick="applyDateFilter()">
+                                    <i class="bi bi-funnel"></i> Lọc
+                                </button>
+                                <button class="btn btn-secondary btn-modern" onclick="clearDateFilter()">
+                                    <i class="bi bi-x-circle"></i> Xóa
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row">
+            <div class="col-xl-6 col-lg-12">
+                <div class="chart-container">
+                    <h5 class="mb-3">
+                        <i class="bi bi-graph-up"></i> Công suất theo thời gian
+                    </h5>
+                    <canvas id="powerChart"></canvas>
+                </div>
+            </div>
+            <div class="col-xl-6 col-lg-12">
+                <div class="chart-container">
+                    <h5 class="mb-3">
+                        <i class="bi bi-speedometer2"></i> Điện áp & Dòng điện
+                    </h5>
+                    <canvas id="voltageCurrentChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sensor Status Table -->
+        <div class="row">
+            <div class="col-12">
+                <div class="data-table-container">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">
+                            <i class="bi bi-table"></i> Dữ liệu cảm biến mới nhất
+                        </h5>
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-outline-primary btn-sm" onclick="toggleRealtime()" id="realtime-btn">
+                                <i class="bi bi-play-circle"></i> Bật realtime
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="exportTableData()">
+                                <i class="bi bi-file-earmark-spreadsheet"></i> Xuất CSV
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover table-modern" id="measurements-table">
+                            <thead>
+                                <tr>
+                                    <th>Thời gian</th>
+                                    <th>Cảm biến</th>
+                                    <th>Điện áp (V)</th>
+                                    <th>Dòng điện (A)</th>
+                                    <th>Công suất (W)</th>
+                                    <th>Năng lượng (Wh)</th>
+                                    <th>Tần số (Hz)</th>
+                                    <th>Hệ số công suất</th>
+                                    <th>Báo động</th>
+                                </tr>
+                            </thead>
+                            <tbody id="measurements-tbody">
+                                <!-- Data will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <div>
+                            <span class="text-muted">Hiển thị <span id="records-count">0</span> bản ghi</span>
+                        </div>
+                        <div>
+                            <button class="btn btn-outline-primary btn-sm" onclick="loadMoreData()">
+                                <i class="bi bi-arrow-down-circle"></i> Tải thêm dữ liệu
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Global variables
+        let powerChart, voltageCurrentChart;
+        let isRealtimeEnabled = false;
+        let realtimeInterval;
+        let currentData = [];
+        let currentLimit = 50;
+        
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDashboard();
+            initializeCharts();
+            setDefaultDates();
+        });
+        
+        function setDefaultDates() {
+            const today = new Date();
+            const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+            
+            document.getElementById('start-date').value = weekAgo.toISOString().split('T')[0];
+            document.getElementById('end-date').value = today.toISOString().split('T')[0];
+        }
+        
+        async function initializeDashboard() {
+            showLoading(true);
+            try {
+                await Promise.all([
+                    loadDashboardData(),
+                    loadSensors(),
+                    loadMeasurements()
+                ]);
+                showStatus('success', 'Dashboard đã tải thành công!');
+            } catch (error) {
+                console.error('Error initializing dashboard:', error);
+                showStatus('danger', 'Lỗi khi tải dashboard: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        async function loadDashboardData() {
+            const response = await fetch('/api/dashboard');
+            const result = await response.json();
+            
+            if (result.success) {
+                const data = result.data;
+                
+                // Update statistics cards
+                document.getElementById('total-power').textContent = 
+                    data.summary.total_power.toFixed(1) + ' W';
+                document.getElementById('total-energy').textContent = 
+                    (data.summary.total_energy / 1000).toFixed(2) + ' kWh';
+                document.getElementById('avg-voltage').textContent = 
+                    data.summary.avg_voltage.toFixed(1) + ' V';
+                document.getElementById('sensor-count').textContent = 
+                    data.summary.sensor_count;
+                
+                // Update charts with recent data
+                updateCharts(data.chart_data);
+                
+                return data;
+            } else {
+                throw new Error('Failed to load dashboard data');
+            }
+        }
+        
+        async function loadSensors() {
+            const response = await fetch('/api/sensors');
+            const result = await response.json();
+            
+            if (result.success) {
+                const sensorSelect = document.getElementById('sensor-filter');
+                sensorSelect.innerHTML = '<option value="">Tất cả cảm biến</option>';
+                
+                result.data.forEach(sensor => {
+                    const option = document.createElement('option');
+                    option.value = sensor.port;
+                    option.textContent = `${sensor.port} (${sensor.device_address})`;
+                    sensorSelect.appendChild(option);
+                });
+                
+                return result.data;
+            } else {
+                throw new Error('Failed to load sensors');
+            }
+        }
+        
+        async function loadMeasurements(limit = 50) {
+            const response = await fetch(`/api/measurements?limit=${limit}`);
+            const result = await response.json();
+            
+            if (result.success) {
+                currentData = result.data;
+                updateMeasurementsTable(result.data);
+                document.getElementById('records-count').textContent = result.data.length;
+                return result.data;
+            } else {
+                throw new Error('Failed to load measurements');
+            }
+        }
+        
+        function updateMeasurementsTable(data) {
+            const tbody = document.getElementById('measurements-tbody');
+            tbody.innerHTML = '';
+            
+            data.forEach(record => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${new Date(record.timestamp).toLocaleString('vi-VN')}</td>
+                    <td><span class="sensor-badge bg-primary text-white">${record.port}</span></td>
+                    <td>${record.voltage.toFixed(1)}</td>
+                    <td>${record.current.toFixed(3)}</td>
+                    <td>${record.power.toFixed(1)}</td>
+                    <td>${record.energy.toFixed(0)}</td>
+                    <td>${record.frequency.toFixed(1)}</td>
+                    <td>${record.power_factor.toFixed(2)}</td>
+                    <td>
+                        <span class="sensor-badge ${record.alarm_status ? 'alarm-on' : 'alarm-off'}">
+                            ${record.alarm_status ? 'BẬT' : 'TẮT'}
+                        </span>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        function initializeCharts() {
+            // Power Chart
+            const powerCtx = document.getElementById('powerChart').getContext('2d');
+            powerChart = new Chart(powerCtx, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: 'Công suất (W)',
+                        borderColor: 'rgb(13, 110, 253)',
+                        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        data: []
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                displayFormats: {
+                                    hour: 'HH:mm'
+                                }
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Công suất (W)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true
+                        }
+                    }
+                }
+            });
+            
+            // Voltage & Current Chart
+            const voltageCurrentCtx = document.getElementById('voltageCurrentChart').getContext('2d');
+            voltageCurrentChart = new Chart(voltageCurrentCtx, {
+                type: 'line',
+                data: {
+                    datasets: [
+                        {
+                            label: 'Điện áp (V)',
+                            borderColor: 'rgb(255, 193, 7)',
+                            backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                            yAxisID: 'y',
+                            tension: 0.4,
+                            data: []
+                        },
+                        {
+                            label: 'Dòng điện (A)',
+                            borderColor: 'rgb(25, 135, 84)',
+                            backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                            yAxisID: 'y1',
+                            tension: 0.4,
+                            data: []
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                displayFormats: {
+                                    hour: 'HH:mm'
+                                }
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Điện áp (V)'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Dòng điện (A)'
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true
+                        }
+                    }
+                }
+            });
+        }
+        
+        function updateCharts(data) {
+            if (!data || data.length === 0) return;
+            
+            // Prepare data for charts
+            const chartData = data.map(record => ({
+                x: new Date(record.timestamp),
+                power: record.power,
+                voltage: record.voltage,
+                current: record.current
+            }));
+            
+            // Update power chart
+            powerChart.data.datasets[0].data = chartData.map(d => ({x: d.x, y: d.power}));
+            powerChart.update();
+            
+            // Update voltage & current chart
+            voltageCurrentChart.data.datasets[0].data = chartData.map(d => ({x: d.x, y: d.voltage}));
+            voltageCurrentChart.data.datasets[1].data = chartData.map(d => ({x: d.x, y: d.current}));
+            voltageCurrentChart.update();
+        }
+        
+        async function applyDateFilter() {
+            const startDate = document.getElementById('start-date').value;
+            const endDate = document.getElementById('end-date').value;
+            const sensorPort = document.getElementById('sensor-filter').value;
+            
+            if (!startDate || !endDate) {
+                showStatus('warning', 'Vui lòng chọn ngày bắt đầu và kết thúc');
+                return;
+            }
+            
+            showLoading(true);
+            try {
+                let url = `/api/measurements/range?start_date=${startDate}&end_date=${endDate}`;
+                if (sensorPort) {
+                    url += `&port=${encodeURIComponent(sensorPort)}`;
+                }
+                
+                const response = await fetch(url);
+                const result = await response.json();
+                
+                if (result.success) {
+                    currentData = result.data;
+                    updateMeasurementsTable(result.data);
+                    updateCharts(result.data);
+                    document.getElementById('records-count').textContent = result.data.length;
+                    showStatus('success', `Đã tải ${result.data.length} bản ghi trong khoảng thời gian đã chọn`);
+                } else {
+                    showStatus('danger', 'Lỗi khi lọc dữ liệu');
+                }
+            } catch (error) {
+                console.error('Error applying date filter:', error);
+                showStatus('danger', 'Lỗi khi lọc dữ liệu: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        function clearDateFilter() {
+            setDefaultDates();
+            document.getElementById('sensor-filter').value = '';
+            loadMeasurements(currentLimit);
+            loadDashboardData();
+            showStatus('info', 'Đã xóa bộ lọc và tải lại dữ liệu mặc định');
+        }
+        
+        function toggleRealtime() {
+            const btn = document.getElementById('realtime-btn');
+            
+            if (isRealtimeEnabled) {
+                // Stop realtime
+                clearInterval(realtimeInterval);
+                isRealtimeEnabled = false;
+                btn.innerHTML = '<i class="bi bi-play-circle"></i> Bật realtime';
+                btn.className = 'btn btn-outline-primary btn-sm';
+                showStatus('info', 'Đã tắt cập nhật realtime');
+            } else {
+                // Start realtime
+                isRealtimeEnabled = true;
+                btn.innerHTML = '<i class="bi bi-pause-circle"></i> Tắt realtime';
+                btn.className = 'btn btn-outline-danger btn-sm';
+                
+                realtimeInterval = setInterval(async () => {
+                    try {
+                        await loadMeasurements(currentLimit);
+                        await loadDashboardData();
+                    } catch (error) {
+                        console.error('Realtime update error:', error);
+                    }
+                }, 5000); // Update every 5 seconds
+                
+                showStatus('success', 'Đã bật cập nhật realtime (5s)');
+            }
+        }
+        
+        async function loadMoreData() {
+            currentLimit += 50;
+            await loadMeasurements(currentLimit);
+            showStatus('info', `Đã tải thêm dữ liệu. Tổng cộng: ${currentData.length} bản ghi`);
+        }
+        
+        async function refreshData() {
+            showLoading(true);
+            try {
+                await initializeDashboard();
+                showStatus('success', 'Đã làm mới dữ liệu thành công!');
+            } catch (error) {
+                showStatus('danger', 'Lỗi khi làm mới dữ liệu');
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        async function exportTableData() {
+            try {
+                const startDate = document.getElementById('start-date').value;
+                const endDate = document.getElementById('end-date').value;
+                const sensorPort = document.getElementById('sensor-filter').value;
+                
+                let url = '/api/export/csv';
+                const params = new URLSearchParams();
+                
+                if (startDate && endDate) {
+                    // If date filter is applied, use current filtered data
+                    params.append('limit', currentData.length.toString());
+                }
+                if (sensorPort) {
+                    params.append('port', sensorPort);
+                }
+                
+                if (params.toString()) {
+                    url += '?' + params.toString();
+                }
+                
+                window.open(url, '_blank');
+                showStatus('success', 'Đã bắt đầu tải xuống file CSV');
+            } catch (error) {
+                console.error('Export error:', error);
+                showStatus('danger', 'Lỗi khi xuất dữ liệu');
+            }
+        }
+        
+        function showLoading(show) {
+            const spinner = document.getElementById('loading-spinner');
+            spinner.style.display = show ? 'block' : 'none';
+        }
+        
+        function showStatus(type, message) {
+            const alert = document.getElementById('status-alert');
+            alert.className = `alert alert-modern alert-${type}`;
+            alert.innerHTML = `
+                <i class="bi bi-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-triangle' : 'info-circle'}"></i>
+                ${message}
+            `;
+            alert.classList.remove('d-none');
+            
+            // Auto hide after 5 seconds
+            setTimeout(() => {
+                alert.classList.add('d-none');
+            }, 5000);
+        }
+        
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (realtimeInterval) {
+                clearInterval(realtimeInterval);
+            }
+        });
+    </script>
+</body>
+</html>

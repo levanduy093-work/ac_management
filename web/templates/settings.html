@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚙️ Cài đặt - PZEM-004T Dashboard</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <style>
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .settings-header {
+            background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%);
+            color: white;
+            padding: 1.5rem 0;
+            border-radius: 0 0 15px 15px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .settings-card {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            border: none;
+        }
+        
+        .stat-item {
+            padding: 1rem;
+            border-radius: 10px;
+            background: #f8f9fa;
+            margin-bottom: 1rem;
+            transition: all 0.2s ease;
+        }
+        
+        .stat-item:hover {
+            background: #e9ecef;
+            transform: translateY(-1px);
+        }
+        
+        .btn-action {
+            border-radius: 25px;
+            padding: 0.75rem 2rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: none;
+            transition: all 0.2s ease;
+            margin: 0.25rem;
+        }
+        
+        .btn-action:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        
+        .sensor-card {
+            border: 1px solid #dee2e6;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: all 0.2s ease;
+        }
+        
+        .sensor-card:hover {
+            border-color: #0d6efd;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .status-online {
+            color: #198754;
+        }
+        
+        .status-offline {
+            color: #dc3545;
+        }
+        
+        .danger-zone {
+            border: 2px solid #dc3545;
+            border-radius: 15px;
+            padding: 1.5rem;
+            background: rgba(220, 53, 69, 0.05);
+        }
+        
+        .info-box {
+            background: rgba(13, 110, 253, 0.1);
+            border: 1px solid rgba(13, 110, 253, 0.2);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .confirmation-modal .modal-content {
+            border-radius: 15px;
+            border: none;
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        
+        .loading-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="settings-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="mb-0">
+                        <i class="bi bi-gear"></i>
+                        Cài đặt & Quản lý
+                    </h1>
+                    <p class="mb-0 opacity-75">Quản lý hệ thống và dữ liệu PZEM-004T</p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <a href="/" class="btn btn-light">
+                        <i class="bi bi-arrow-left"></i> Quay lại Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Status Messages -->
+        <div id="status-message" class="alert" style="display: none;"></div>
+        
+        <!-- System Health -->
+        <div class="row">
+            <div class="col-12">
+                <div class="settings-card">
+                    <h4 class="mb-4">
+                        <i class="bi bi-heart-pulse"></i> Trạng thái hệ thống
+                    </h4>
+                    
+                    <div class="row" id="system-health">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                    
+                    <div class="text-center mt-3">
+                        <button class="btn btn-primary btn-action" onclick="checkSystemHealth()">
+                            <i class="bi bi-arrow-clockwise"></i> Kiểm tra lại
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Database Statistics -->
+        <div class="row">
+            <div class="col-12">
+                <div class="settings-card">
+                    <h4 class="mb-4">
+                        <i class="bi bi-database"></i> Thống kê Database
+                    </h4>
+                    
+                    <div class="row" id="database-stats">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                    
+                    <div class="text-center mt-3">
+                        <button class="btn btn-info btn-action" onclick="refreshDatabaseStats()">
+                            <i class="bi bi-arrow-clockwise"></i> Làm mới thống kê
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sensor Management -->
+        <div class="row">
+            <div class="col-12">
+                <div class="settings-card">
+                    <h4 class="mb-4">
+                        <i class="bi bi-cpu"></i> Quản lý cảm biến
+                    </h4>
+                    
+                    <div id="sensors-container">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                    
+                    <div class="text-center mt-3">
+                        <button class="btn btn-success btn-action" onclick="refreshSensors()">
+                            <i class="bi bi-arrow-clockwise"></i> Làm mới danh sách
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Data Management -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="settings-card">
+                    <h5 class="mb-3">
+                        <i class="bi bi-archive"></i> Quản lý dữ liệu
+                    </h5>
+                    
+                    <div class="info-box">
+                        <i class="bi bi-info-circle text-primary"></i>
+                        <strong>Lưu ý:</strong> Dọn dẹp dữ liệu cũ giúp tối ưu hiệu suất database.
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="cleanup-days" class="form-label">Giữ lại dữ liệu (ngày):</label>
+                        <select class="form-select" id="cleanup-days">
+                            <option value="7">7 ngày</option>
+                            <option value="14">14 ngày</option>
+                            <option value="30" selected>30 ngày</option>
+                            <option value="60">60 ngày</option>
+                            <option value="90">90 ngày</option>
+                        </select>
+                    </div>
+                    
+                    <button class="btn btn-warning btn-action w-100" onclick="cleanupData()">
+                        <i class="bi bi-trash"></i> Dọn dẹp dữ liệu cũ
+                    </button>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="settings-card">
+                    <h5 class="mb-3">
+                        <i class="bi bi-download"></i> Sao lưu dữ liệu
+                    </h5>
+                    
+                    <div class="info-box">
+                        <i class="bi bi-shield-check text-success"></i>
+                        <strong>Khuyến nghị:</strong> Sao lưu dữ liệu định kỳ để đảm bảo an toàn.
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-success btn-action" onclick="backupData('csv')">
+                            <i class="bi bi-file-earmark-spreadsheet"></i> Sao lưu CSV
+                        </button>
+                        <button class="btn btn-info btn-action" onclick="backupData('json')">
+                            <i class="bi bi-file-earmark-code"></i> Sao lưu JSON
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- API Information -->
+        <div class="row">
+            <div class="col-12">
+                <div class="settings-card">
+                    <h4 class="mb-4">
+                        <i class="bi bi-cloud"></i> Thông tin API
+                    </h4>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>API Endpoints chính:</h6>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <code>/api/stats</code>
+                                    <span class="badge bg-primary">GET</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <code>/api/sensors</code>
+                                    <span class="badge bg-primary">GET</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <code>/api/measurements</code>
+                                    <span class="badge bg-primary">GET</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <code>/api/export/csv</code>
+                                    <span class="badge bg-success">GET</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <code>/api/export/json</code>
+                                    <span class="badge bg-success">GET</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Thông tin kết nối:</h6>
+                            <div class="stat-item">
+                                <strong>Base URL:</strong><br>
+                                <code id="api-base-url">http://localhost:8000</code>
+                            </div>
+                            <div class="stat-item">
+                                <strong>API Documentation:</strong><br>
+                                <a href="/docs" target="_blank" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-book"></i> Xem API Docs
+                                </a>
+                            </div>
+                            <div class="stat-item">
+                                <strong>Status:</strong>
+                                <span id="api-status" class="badge bg-success">Online</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Danger Zone -->
+        <div class="row">
+            <div class="col-12">
+                <div class="settings-card">
+                    <div class="danger-zone">
+                        <h4 class="text-danger mb-3">
+                            <i class="bi bi-exclamation-triangle"></i> Vùng nguy hiểm
+                        </h4>
+                        
+                        <div class="alert alert-danger">
+                            <i class="bi bi-shield-exclamation"></i>
+                            <strong>Cảnh báo:</strong> Các thao tác dưới đây có thể gây mất dữ liệu không thể khôi phục.
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Xóa toàn bộ dữ liệu đo:</h6>
+                                <p class="text-muted">Xóa tất cả measurements nhưng giữ lại thông tin sensors.</p>
+                                <button class="btn btn-danger btn-action" onclick="confirmAction('clear-measurements')">
+                                    <i class="bi bi-trash"></i> Xóa tất cả measurements
+                                </button>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Reset toàn bộ database:</h6>
+                                <p class="text-muted">Xóa tất cả dữ liệu và reset database về trạng thái ban đầu.</p>
+                                <button class="btn btn-danger btn-action" onclick="confirmAction('reset-database')">
+                                    <i class="bi bi-exclamation-triangle"></i> Reset Database
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Confirmation Modal -->
+    <div class="modal fade confirmation-modal" id="confirmationModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-exclamation-triangle text-warning"></i>
+                        Xác nhận thao tác
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="confirmation-message">
+                    <!-- Dynamic content -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-danger" id="confirm-action-btn">Xác nhận</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-content">
+            <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;"></div>
+            <h5>Đang xử lý...</h5>
+            <p class="text-muted">Vui lòng đợi trong giây lát</p>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        let currentAction = null;
+        
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeSettings();
+            
+            // Set API base URL
+            document.getElementById('api-base-url').textContent = window.location.origin;
+        });
+        
+        async function initializeSettings() {
+            showLoading(true);
+            try {
+                await Promise.all([
+                    checkSystemHealth(),
+                    refreshDatabaseStats(),
+                    refreshSensors()
+                ]);
+                showStatus('success', 'Đã tải thông tin cài đặt thành công!');
+            } catch (error) {
+                console.error('Error initializing settings:', error);
+                showStatus('danger', 'Lỗi khi tải cài đặt: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        async function checkSystemHealth() {
+            try {
+                const response = await fetch('/api/health');
+                const health = await response.json();
+                
+                const container = document.getElementById('system-health');
+                
+                let statusClass = health.status === 'healthy' ? 'success' : 'danger';
+                let statusIcon = health.status === 'healthy' ? 'check-circle' : 'exclamation-triangle';
+                
+                container.innerHTML = `
+                    <div class="col-md-3">
+                        <div class="stat-item text-center">
+                            <i class="bi bi-${statusIcon} text-${statusClass}" style="font-size: 2rem;"></i>
+                            <h6 class="mt-2">Trạng thái hệ thống</h6>
+                            <span class="badge bg-${statusClass}">${health.status === 'healthy' ? 'Khỏe mạnh' : 'Có vấn đề'}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-item text-center">
+                            <i class="bi bi-database text-info" style="font-size: 2rem;"></i>
+                            <h6 class="mt-2">Database</h6>
+                            <span class="badge bg-info">${health.database || 'N/A'}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-item text-center">
+                            <i class="bi bi-bar-chart text-primary" style="font-size: 2rem;"></i>
+                            <h6 class="mt-2">Tổng measurements</h6>
+                            <span class="badge bg-primary">${health.total_measurements || 0}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-item text-center">
+                            <i class="bi bi-clock text-warning" style="font-size: 2rem;"></i>
+                            <h6 class="mt-2">Cập nhật lần cuối</h6>
+                            <span class="badge bg-warning text-dark">${new Date(health.timestamp).toLocaleTimeString('vi-VN')}</span>
+                        </div>
+                    </div>
+                `;
+                
+                // Update API status
+                document.getElementById('api-status').className = `badge bg-${statusClass}`;
+                document.getElementById('api-status').textContent = health.status === 'healthy' ? 'Online' : 'Offline';
+                
+            } catch (error) {
+                console.error('Health check error:', error);
+                document.getElementById('system-health').innerHTML = `
+                    <div class="col-12">
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            Không thể kiểm tra trạng thái hệ thống
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        async function refreshDatabaseStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const stats = result.data;
+                    const container = document.getElementById('database-stats');
+                    
+                    container.innerHTML = `
+                        <div class="col-md-3">
+                            <div class="stat-item text-center">
+                                <h5 class="text-primary">${stats.database_size_mb} MB</h5>
+                                <h6>Dung lượng DB</h6>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-item text-center">
+                                <h5 class="text-success">${stats.total_measurements.toLocaleString()}</h5>
+                                <h6>Tổng Measurements</h6>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-item text-center">
+                                <h5 class="text-info">${stats.total_sensors}</h5>
+                                <h6>Tổng Sensors</h6>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-item text-center">
+                                <h5 class="text-warning">${stats.newest_measurement ? new Date(stats.newest_measurement).toLocaleDateString('vi-VN') : 'N/A'}</h5>
+                                <h6>Dữ liệu mới nhất</h6>
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Stats error:', error);
+                showStatus('warning', 'Không thể tải thống kê database');
+            }
+        }
+        
+        async function refreshSensors() {
+            try {
+                const response = await fetch('/api/sensors');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const sensors = result.data;
+                    const container = document.getElementById('sensors-container');
+                    
+                    if (sensors.length === 0) {
+                        container.innerHTML = `
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i>
+                                Chưa có cảm biến nào được phát hiện. Hãy chạy script monitor để thu thập dữ liệu.
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    let html = '';
+                    sensors.forEach(sensor => {
+                        const lastSeen = new Date(sensor.last_seen);
+                        const isOnline = (Date.now() - lastSeen.getTime()) < 300000; // 5 minutes
+                        
+                        html += `
+                            <div class="sensor-card">
+                                <div class="row align-items-center">
+                                    <div class="col-md-3">
+                                        <h6 class="mb-1">
+                                            <i class="bi bi-cpu"></i> ${sensor.port}
+                                        </h6>
+                                        <small class="text-muted">Address: 0x${sensor.device_address.toString(16).toUpperCase()}</small>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <span class="badge ${isOnline ? 'bg-success' : 'bg-danger'}">
+                                            <i class="bi bi-${isOnline ? 'check-circle' : 'x-circle'}"></i>
+                                            ${isOnline ? 'Online' : 'Offline'}
+                                        </span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <small class="text-muted">Lần cuối: ${lastSeen.toLocaleString('vi-VN')}</small>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <small class="text-muted">${sensor.total_measurements.toLocaleString()} readings</small>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button class="btn btn-sm btn-outline-primary" onclick="viewSensorDetails('${sensor.port}')">
+                                            <i class="bi bi-eye"></i> Chi tiết
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    container.innerHTML = html;
+                }
+            } catch (error) {
+                console.error('Sensors error:', error);
+                showStatus('warning', 'Không thể tải danh sách cảm biến');
+            }
+        }
+        
+        async function cleanupData() {
+            const days = document.getElementById('cleanup-days').value;
+            
+            const message = `Bạn có chắc chắn muốn xóa tất cả dữ liệu cũ hơn ${days} ngày?<br><br>
+                            <strong>Thao tác này không thể hoàn tác!</strong>`;
+            
+            showConfirmation(message, async () => {
+                try {
+                    showLoading(true);
+                    const response = await fetch(`/api/cleanup?days_to_keep=${days}`, {
+                        method: 'DELETE'
+                    });
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        showStatus('success', `Đã xóa ${result.data.deleted_records} bản ghi cũ hơn ${days} ngày`);
+                        await refreshDatabaseStats();
+                    } else {
+                        showStatus('danger', 'Lỗi khi dọn dẹp dữ liệu');
+                    }
+                } catch (error) {
+                    console.error('Cleanup error:', error);
+                    showStatus('danger', 'Lỗi khi dọn dẹp dữ liệu: ' + error.message);
+                } finally {
+                    showLoading(false);
+                }
+            });
+        }
+        
+        async function backupData(format) {
+            try {
+                showLoading(true);
+                showStatus('info', 'Đang chuẩn bị file sao lưu...');
+                
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                const filename = `pzem_backup_${timestamp}.${format}`;
+                
+                window.open(`/api/export/${format}`, '_blank');
+                showStatus('success', `Đã bắt đầu tải xuống file sao lưu ${format.toUpperCase()}`);
+            } catch (error) {
+                console.error('Backup error:', error);
+                showStatus('danger', 'Lỗi khi sao lưu dữ liệu');
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        function viewSensorDetails(port) {
+            // Redirect to dashboard with sensor filter
+            window.location.href = `/?sensor=${encodeURIComponent(port)}`;
+        }
+        
+        function confirmAction(action) {
+            let message = '';
+            
+            switch (action) {
+                case 'clear-measurements':
+                    message = `<div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Cảnh báo nghiêm trọng!</strong>
+                    </div>
+                    <p>Bạn sắp xóa <strong>TẤT CẢ</strong> dữ liệu đo từ database.</p>
+                    <p>Thao tác này sẽ:</p>
+                    <ul>
+                        <li>Xóa tất cả measurements</li>
+                        <li>Giữ lại thông tin sensors</li>
+                        <li><strong>KHÔNG THỂ HOÀN TÁC!</strong></li>
+                    </ul>
+                    <p><strong>Bạn có CHẮC CHẮN muốn tiếp tục?</strong></p>`;
+                    break;
+                    
+                case 'reset-database':
+                    message = `<div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>NGUY HIỂM CỰC KỲ!</strong>
+                    </div>
+                    <p>Bạn sắp reset <strong>TOÀN BỘ DATABASE</strong>.</p>
+                    <p>Thao tác này sẽ:</p>
+                    <ul>
+                        <li>Xóa tất cả measurements</li>
+                        <li>Xóa tất cả thông tin sensors</li>
+                        <li>Reset database về trạng thái ban đầu</li>
+                        <li><strong>MẤT TẤT CẢ DỮ LIỆU!</strong></li>
+                    </ul>
+                    <p><strong style="color: red;">Bạn có THỰC SỰ CHẮC CHẮN?</strong></p>`;
+                    break;
+            }
+            
+            currentAction = action;
+            showConfirmation(message, executeAction);
+        }
+        
+        async function executeAction() {
+            if (!currentAction) return;
+            
+            try {
+                showLoading(true);
+                
+                // Since we don't have actual endpoints for these dangerous operations,
+                // we'll simulate them for the UI demo
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                switch (currentAction) {
+                    case 'clear-measurements':
+                        showStatus('success', 'Đã xóa tất cả measurements (DEMO - không thực hiện)');
+                        break;
+                    case 'reset-database':
+                        showStatus('success', 'Đã reset database (DEMO - không thực hiện)');
+                        break;
+                }
+                
+                await refreshDatabaseStats();
+                
+            } catch (error) {
+                console.error('Action error:', error);
+                showStatus('danger', 'Lỗi khi thực hiện thao tác: ' + error.message);
+            } finally {
+                showLoading(false);
+                currentAction = null;
+            }
+        }
+        
+        function showConfirmation(message, onConfirm) {
+            document.getElementById('confirmation-message').innerHTML = message;
+            
+            const modal = new bootstrap.Modal(document.getElementById('confirmationModal'));
+            modal.show();
+            
+            document.getElementById('confirm-action-btn').onclick = () => {
+                modal.hide();
+                onConfirm();
+            };
+        }
+        
+        function showLoading(show) {
+            const overlay = document.getElementById('loading-overlay');
+            overlay.style.display = show ? 'flex' : 'none';
+        }
+        
+        function showStatus(type, message) {
+            const statusDiv = document.getElementById('status-message');
+            statusDiv.className = `alert alert-${type}`;
+            statusDiv.innerHTML = `
+                <i class="bi bi-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-triangle' : 'info-circle'}"></i>
+                ${message}
+            `;
+            statusDiv.style.display = 'block';
+            
+            // Auto hide after 5 seconds
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 5000);
+            
+            // Scroll to top to show message
+            window.scrollTo(0, 0);
+        }
+    </script>
+</body>
+</html>
