@@ -15,7 +15,6 @@ help:
 	@echo "  lint         - Run linting"
 	@echo "  format       - Format code with black"
 	@echo "  docs         - Generate documentation"
-	@echo "  run-monitor  - Run the multi-sensor monitor (CSV storage)"
 	@echo "  run-monitor-db - Run the multi-sensor monitor (Database storage)"
 	@echo "  run-reset    - Run the energy reset tool"
 	@echo "  db-stats     - Show database statistics"
