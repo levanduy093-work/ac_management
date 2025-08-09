@@ -8,8 +8,9 @@ import sys
 import os
 import asyncio
 import sqlite3
+import time
 from datetime import datetime, timedelta
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 import json
 import csv
 import tempfile
@@ -25,6 +26,18 @@ import uvicorn
 # Add src directory to path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 from database import PZEMDatabase
+ 
+# Serial and device control imports
+try:
+    import serial  # type: ignore
+    import serial.tools.list_ports  # type: ignore
+except Exception:
+    serial = None  # Will check at runtime
+
+try:
+    from pzem import PZEM004T  # type: ignore
+except Exception:
+    PZEM004T = None  # Will check at runtime
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -120,6 +133,154 @@ async def get_database_stats():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# ===== ENERGY RESET HELPERS =====
+
+def _ensure_device_libs_available():
+    if serial is None:
+        raise HTTPException(status_code=500, detail="Thiếu thư viện 'pyserial'. Vui lòng cài đặt: pip install pyserial")
+    if PZEM004T is None:
+        raise HTTPException(status_code=500, detail="Không thể import PZEM004T. Kiểm tra thư mục 'src' và mô-đun 'pzem.py'.")
+
+def _find_pzem_ports() -> List[str]:
+    ports = []
+    for port in serial.tools.list_ports.comports():
+        desc_lower = (port.description or "").lower()
+        device_lower = (port.device or "").lower()
+        hwid_lower = (port.hwid or "").lower()
+        keywords = ["pl2303", "usb-serial", "usb serial", "ch340"]
+        if (
+            any(k in desc_lower for k in keywords)
+            or any(k in device_lower for k in keywords)
+            or "vid:067b" in hwid_lower
+        ):
+            ports.append(port.device)
+    return ports
+
+def _get_pzem_info(port: str) -> Tuple[Optional[int], float, bool, Optional[str]]:
+    device = None
+    try:
+        device = PZEM004T(port=port, timeout=2.0)
+        address = device.get_address()
+        if address is None:
+            address = device.DEFAULT_ADDRESS
+        measurements = device.get_all_measurements()
+        energy = measurements.get("energy", 0.0) if measurements else 0.0
+        return (address, energy, True, None)
+    except Exception as exc:  # noqa: BLE001
+        return (None, 0.0, False, str(exc))
+    finally:
+        if device:
+            try:
+                device.close()
+            except Exception:
+                pass
+
+def _reset_pzem_isolated(port: str, target_address: Optional[int], verify_reset: bool) -> Dict[str, Any]:
+    device = None
+    result: Dict[str, Any] = {
+        "port": port,
+        "address": target_address,
+        "energy_before": None,
+        "energy_after": None,
+        "success": False,
+        "error": None,
+    }
+    try:
+        device = (
+            PZEM004T(port=port, address=target_address, timeout=1.0)
+            if target_address is not None
+            else PZEM004T(port=port, timeout=1.0)
+        )
+
+        before = device.get_all_measurements()
+        energy_before = before.get("energy", 0.0) if before else 0.0
+        result["energy_before"] = energy_before
+
+        success = False
+        for _ in range(3):
+            try:
+                if device.reset_energy(verify_reset=False):
+                    success = True
+                    break
+                time.sleep(0.2)
+            except Exception as exc:  # noqa: BLE001
+                result["error"] = str(exc)
+                time.sleep(0.3)
+
+        if not success:
+            result["success"] = False
+            return result
+
+        # Allow device time to process
+        time.sleep(1.0)
+
+        after = device.get_all_measurements()
+        energy_after = after.get("energy", 0.0) if after else 0.0
+        result["energy_after"] = energy_after
+
+        if not verify_reset:
+            result["success"] = True
+            return result
+
+        result["success"] = (energy_after < energy_before) or (energy_after == 0.0)
+        if not result["success"] and result["error"] is None:
+            result["error"] = "Không xác minh được reset (năng lượng không giảm)"
+        return result
+    except Exception as exc:  # noqa: BLE001
+        result["success"] = False
+        result["error"] = str(exc)
+        return result
+    finally:
+        if device:
+            try:
+                device.close()
+            except Exception:
+                pass
+
+def _reset_all_pzems_sequential(verify_reset: bool) -> Dict[str, Any]:
+    detected = _find_pzem_ports()
+    if not detected:
+        raise HTTPException(status_code=404, detail="Không phát hiện thiết bị PZEM nào")
+
+    devices_info: List[Dict[str, Any]] = []
+    for p in detected:
+        addr, eng, ok, err = _get_pzem_info(p)
+        if ok:
+            devices_info.append({"port": p, "address": addr, "energy": eng})
+        else:
+            devices_info.append({"port": p, "address": None, "energy": 0.0, "error": err, "skipped": True})
+
+    valid = [d for d in devices_info if not d.get("skipped")]
+    if not valid:
+        raise HTTPException(status_code=404, detail="Không có thiết bị PZEM hợp lệ")
+
+    addresses = [d["address"] for d in valid if d.get("address") is not None]
+    duplicate_addresses = [a for a in set(addresses) if addresses.count(a) > 1]
+
+    results: List[Dict[str, Any]] = []
+    for dev in valid:
+        res = _reset_pzem_isolated(dev["port"], dev.get("address"), verify_reset)
+        results.append(res)
+        # Wait longer between devices with duplicate address
+        if dev.get("address") in duplicate_addresses:
+            time.sleep(2.0)
+        else:
+            time.sleep(1.0)
+
+    total = len(results)
+    success_count = sum(1 for r in results if r.get("success"))
+    fail_count = total - success_count
+    return {
+        "detected_ports": detected,
+        "results": results,
+        "summary": {
+            "total": total,
+            "success": success_count,
+            "failed": fail_count,
+            "duplicate_addresses": duplicate_addresses,
+        },
+    }
+
 @app.get("/api/database/stats")
 async def get_database_stats_detailed():
     """Get detailed database statistics (alternative endpoint)"""
@@ -173,6 +334,56 @@ async def get_measurements(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# ===== ENERGY RESET API =====
+
+@app.post("/api/energy/reset")
+def reset_energy(
+    port: Optional[str] = Query(None, description="Cổng muốn reset. Bỏ trống để reset TẤT CẢ."),
+    verify: bool = Query(True, description="Xác minh sau reset bằng cách đọc lại năng lượng"),
+):
+    """Reset bộ đếm năng lượng trên thiết bị PZEM-004T.
+
+    - Nếu cung cấp `port`: reset thiết bị trên cổng đó.
+    - Nếu không: reset tất cả thiết bị tìm thấy tuần tự.
+    """
+    try:
+        _ensure_device_libs_available()
+
+        if port:
+            # Optional: quick validation that port exists
+            available_ports = [p.device for p in serial.tools.list_ports.comports()]
+            if port not in available_ports:
+                # Still allow attempt, but mark a note
+                note = "Cổng không nằm trong danh sách phát hiện. Vẫn thử reset."
+            else:
+                note = None
+
+            addr, energy, ok, err = _get_pzem_info(port)
+            if not ok:
+                raise HTTPException(status_code=404, detail=f"Không thể kết nối tới {port}: {err}")
+
+            res = _reset_pzem_isolated(port, addr, verify)
+            return {
+                "success": res.get("success", False),
+                "mode": "single",
+                "note": note,
+                "data": res,
+                "timestamp": datetime.now().isoformat(),
+            }
+
+        # Reset all devices
+        batch = _reset_all_pzems_sequential(verify)
+        return {
+            "success": batch["summary"]["failed"] == 0,
+            "mode": "all",
+            "data": batch,
+            "timestamp": datetime.now().isoformat(),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi khi reset năng lượng: {str(e)}")
 
 @app.get("/api/measurements/range")
 async def get_measurements_by_date_range(

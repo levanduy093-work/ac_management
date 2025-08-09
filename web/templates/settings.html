@@ -214,6 +214,60 @@
             </div>
         </div>
         
+        <!-- Energy Management -->
+        <div class="row">
+            <div class="col-12">
+                <div class="settings-card">
+                    <h4 class="mb-4">
+                        <i class="bi bi-lightning-charge"></i> Reset bộ đếm năng lượng (Energy)
+                    </h4>
+
+                    <div class="info-box">
+                        <i class="bi bi-info-circle text-primary"></i>
+                        <strong>Lưu ý:</strong> Chức năng này chỉ reset bộ đếm năng lượng trên các cảm biến PZEM-004T, không ảnh hưởng đến địa chỉ thiết bị hay dữ liệu trong database.
+                    </div>
+
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <label for="energy-reset-mode" class="form-label">Chế độ</label>
+                            <select id="energy-reset-mode" class="form-select" onchange="onEnergyResetModeChange()">
+                                <option value="all" selected>Reset TẤT CẢ thiết bị</option>
+                                <option value="port">Reset theo cổng</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-5" id="energy-port-group" style="display: none;">
+                            <label for="energy-port-select" class="form-label">Chọn cổng</label>
+                            <div class="input-group">
+                                <select id="energy-port-select" class="form-select">
+                                    <option value="" selected>Đang tải danh sách cổng...</option>
+                                </select>
+                                <button class="btn btn-outline-secondary" type="button" onclick="loadAvailablePorts()">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </button>
+                            </div>
+                            <small class="text-muted">Danh sách lấy từ thiết bị đang kết nối USB và sensors đã lưu.</small>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox" id="energy-verify" checked>
+                                <label class="form-check-label" for="energy-verify">
+                                    Xác minh sau reset
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-end mt-3">
+                        <button class="btn btn-danger btn-action" onclick="energyResetConfirm()">
+                            <i class="bi bi-lightning"></i> Reset Energy
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Data Management -->
         <div class="row">
             <div class="col-md-6">
@@ -298,6 +352,10 @@
                                 <li class="list-group-item d-flex justify-content-between">
                                     <code>/api/export/json</code>
                                     <span class="badge bg-success">GET</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <code>/api/energy/reset</code>
+                                    <span class="badge bg-danger">POST</span>
                                 </li>
                             </ul>
                         </div>
@@ -590,7 +648,8 @@
                 await Promise.all([
                     checkSystemHealth(),
                     refreshDatabaseStats(),
-                    refreshSensors()
+                    refreshSensors(),
+                    loadAvailablePorts()
                 ]);
                 showStatus('success', 'Đã tải thông tin cài đặt thành công!');
             } catch (error) {
@@ -598,6 +657,107 @@
                 showStatus('danger', 'Lỗi khi tải cài đặt: ' + error.message);
             } finally {
                 showLoading(false);
+            }
+        }
+
+        function onEnergyResetModeChange() {
+            const mode = document.getElementById('energy-reset-mode').value;
+            const group = document.getElementById('energy-port-group');
+            group.style.display = mode === 'port' ? 'block' : 'none';
+        }
+
+        async function loadAvailablePorts() {
+            try {
+                const select = document.getElementById('energy-port-select');
+                if (!select) return;
+
+                // Load from connectivity API
+                const response = await fetch('/api/sensors/connectivity');
+                const result = await response.json();
+
+                let ports = [];
+                if (result && result.success) {
+                    ports = result.available_ports || [];
+                }
+
+                // Fallback: from sensors list
+                if (ports.length === 0) {
+                    const sensorsRes = await fetch('/api/sensors');
+                    const sensorsData = await sensorsRes.json();
+                    if (sensorsData.success) {
+                        ports = (sensorsData.data || []).map(s => s.port);
+                    }
+                }
+
+                // Render options
+                if (ports.length === 0) {
+                    select.innerHTML = `<option value="">Không phát hiện cổng nào</option>`;
+                } else {
+                    select.innerHTML = ports.map(p => `<option value="${p}">${p}</option>`).join('');
+                }
+            } catch (error) {
+                console.error('Load ports error:', error);
+            }
+        }
+
+        function energyResetConfirm() {
+            const mode = document.getElementById('energy-reset-mode').value;
+            const verify = document.getElementById('energy-verify').checked;
+            const port = document.getElementById('energy-port-select')?.value || '';
+
+            if (mode === 'port' && !port) {
+                showStatus('warning', 'Vui lòng chọn cổng để reset');
+                return;
+            }
+
+            let message = '';
+            if (mode === 'all') {
+                message = `<p>Bạn sắp <strong>RESET TẤT CẢ</strong> thiết bị PZEM-004T.</p>
+                           <p>Thao tác này chỉ ảnh hưởng đến bộ đếm năng lượng trên thiết bị, <strong>không</strong> xóa dữ liệu trong database.</p>
+                           <p><strong>Bạn có chắc chắn?</strong></p>`;
+            } else {
+                message = `<p>Bạn sắp reset năng lượng cho thiết bị trên cổng <strong>${port}</strong>.</p>
+                           <p>Thao tác này chỉ ảnh hưởng đến bộ đếm năng lượng trên thiết bị.</p>
+                           <p><strong>Bạn có chắc chắn?</strong></p>`;
+            }
+
+            showConfirmation(message, () => performEnergyReset(mode, port, verify));
+        }
+
+        async function performEnergyReset(mode, port, verify) {
+            try {
+                showLoading(true);
+                showStatus('info', 'Đang thực hiện reset năng lượng...');
+
+                const url = mode === 'port'
+                    ? `/api/energy/reset?port=${encodeURIComponent(port)}&verify=${verify}`
+                    : `/api/energy/reset?verify=${verify}`;
+
+                const response = await fetch(url, { method: 'POST' });
+                const result = await response.json();
+
+                if (response.ok && result) {
+                    if (mode === 'port') {
+                        const d = result.data || {};
+                        const before = d.energy_before ?? 'N/A';
+                        const after = d.energy_after ?? 'N/A';
+                        showStatus(result.success ? 'success' : 'warning',
+                            `${result.success ? '✅' : '⚠️'} Reset ${port} ${result.success ? 'thành công' : 'có thể thất bại'} - Trước: ${before} kWh, Sau: ${after} kWh`);
+                    } else {
+                        const summary = result.data?.summary || {};
+                        showStatus(result.success ? 'success' : 'warning',
+                            `${result.success ? '✅' : '⚠️'} Reset tất cả hoàn tất - Tổng: ${summary.total || 0}, Thành công: ${summary.success || 0}, Thất bại: ${summary.failed || 0}`);
+                    }
+                } else {
+                    showStatus('danger', `❌ Lỗi reset năng lượng: ${result?.detail || 'Không rõ'}`);
+                }
+            } catch (error) {
+                console.error('Energy reset error:', error);
+                showStatus('danger', 'Lỗi khi reset năng lượng: ' + error.message);
+            } finally {
+                showLoading(false);
+                // Refresh sensors to reflect possible energy changes on live cards
+                setTimeout(refreshSensors, 500);
             }
         }
         
