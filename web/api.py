@@ -742,34 +742,70 @@ async def delete_all_measurements():
         raise HTTPException(status_code=500, detail=f"Lỗi khi xóa measurements: {str(e)}")
 
 @app.delete("/api/database/reset")
-async def reset_database():
+async def reset_database(
+    deep: bool = Query(False, description="Deep reset - recreate database file completely")
+):
     """Reset entire database - delete all data"""
     try:
-        with sqlite3.connect(database.db_path) as conn:
-            cursor = conn.cursor()
+        if deep:
+            # Deep reset: Delete and recreate entire database file
+            import os
             
             # Count data before deletion
-            cursor.execute('SELECT COUNT(*) FROM measurements')
-            measurement_count = cursor.fetchone()[0]
+            with sqlite3.connect(database.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute('SELECT COUNT(*) FROM measurements')
+                measurement_count = cursor.fetchone()[0]
+                cursor.execute('SELECT COUNT(*) FROM sensors')
+                sensor_count = cursor.fetchone()[0]
             
-            cursor.execute('SELECT COUNT(*) FROM sensors')
-            sensor_count = cursor.fetchone()[0]
+            # Delete the database file completely
+            if os.path.exists(database.db_path):
+                os.remove(database.db_path)
             
-            # Delete all data
-            cursor.execute('DELETE FROM measurements')
-            cursor.execute('DELETE FROM sensors')
+            # Recreate database with schema
+            database._create_tables()
             
-            # Reset autoincrement counters
-            cursor.execute('DELETE FROM sqlite_sequence WHERE name IN ("measurements", "sensors")')
-            
-            conn.commit()
-            
-        return {
-            "success": True,
-            "message": f"Đã xóa toàn bộ database: {measurement_count} measurements và {sensor_count} sensors",
-            "deleted_measurements": measurement_count,
-            "deleted_sensors": sensor_count
-        }
+            return {
+                "success": True,
+                "message": f"Đã reset sâu toàn bộ database: {measurement_count} measurements và {sensor_count} sensors. File database đã được tạo mới.",
+                "deleted_measurements": measurement_count,
+                "deleted_sensors": sensor_count,
+                "reset_type": "deep"
+            }
+        else:
+            # Normal reset: Just delete data
+            with sqlite3.connect(database.db_path) as conn:
+                cursor = conn.cursor()
+                
+                # Count data before deletion
+                cursor.execute('SELECT COUNT(*) FROM measurements')
+                measurement_count = cursor.fetchone()[0]
+                
+                cursor.execute('SELECT COUNT(*) FROM sensors')
+                sensor_count = cursor.fetchone()[0]
+                
+                # Delete all data
+                cursor.execute('DELETE FROM measurements')
+                cursor.execute('DELETE FROM sensors')
+                
+                # Reset autoincrement counters
+                cursor.execute('DELETE FROM sqlite_sequence WHERE name IN ("measurements", "sensors")')
+                
+                conn.commit()
+                
+                # VACUUM to shrink database file size
+                cursor.execute('VACUUM')
+                
+                conn.commit()
+                
+            return {
+                "success": True,
+                "message": f"Đã xóa toàn bộ database: {measurement_count} measurements và {sensor_count} sensors (Schema được giữ lại)",
+                "deleted_measurements": measurement_count,
+                "deleted_sensors": sensor_count,
+                "reset_type": "normal"
+            }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi khi reset database: {str(e)}")
 

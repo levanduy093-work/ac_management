@@ -666,18 +666,19 @@
                 
                 if (result.success) {
                     const stats = result.data;
+                    console.log('Database stats received:', stats);
                     const container = document.getElementById('database-stats');
                     
                     container.innerHTML = `
                         <div class="col-md-3">
                             <div class="stat-item text-center">
-                                <h5 class="text-primary">${stats.database_size_mb} MB</h5>
+                                <h5 class="text-primary">${(stats.database_size_mb || 0).toFixed(2)} MB</h5>
                                 <h6>Dung lượng DB</h6>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="stat-item text-center">
-                                <h5 class="text-success">${stats.total_measurements.toLocaleString()}</h5>
+                                <h5 class="text-success">${(stats.total_measurements || 0).toLocaleString()}</h5>
                                 <h6>Tổng Measurements</h6>
                             </div>
                         </div>
@@ -947,6 +948,10 @@
                         
                         if (result.success) {
                             showStatus('success', `✅ ${result.message}`);
+                            // Force refresh database stats immediately
+                            setTimeout(() => {
+                                refreshDatabaseStats();
+                            }, 500);
                         } else {
                             showStatus('danger', `❌ Lỗi: ${result.detail || 'Không xóa được measurements'}`);
                         }
@@ -960,6 +965,10 @@
                         
                         if (result.success) {
                             showStatus('success', `✅ ${result.message}`);
+                            // Force refresh database stats immediately
+                            setTimeout(() => {
+                                refreshDatabaseStats();
+                            }, 500);
                         } else {
                             showStatus('danger', `❌ Lỗi: ${result.detail || 'Không reset được database'}`);
                         }

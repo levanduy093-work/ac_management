@@ -271,17 +271,10 @@
                         <i class="bi bi-cloud-download"></i> Tải xuống
                     </h4>
                     
-                    <div class="row">
+                    <div class="row justify-content-center">
                         <div class="col-md-6">
-                            <button class="btn btn-success btn-export" onclick="exportData('csv')" id="export-csv-btn">
-                                <i class="bi bi-file-earmark-spreadsheet"></i>
-                                Xuất CSV
-                            </button>
-                        </div>
-                        <div class="col-md-6">
-                            <button class="btn btn-info btn-export" onclick="exportData('json')" id="export-json-btn">
-                                <i class="bi bi-file-earmark-code"></i>
-                                Xuất JSON
+                            <button class="btn btn-success btn-export" onclick="exportData()" id="export-btn">
+                                <i class="bi bi-file-earmark-spreadsheet"></i> Tải xuống CSV
                             </button>
                         </div>
                     </div>
@@ -326,6 +319,9 @@
                     customDateRange.style.display = 'none';
                 }
             });
+            
+            // Initialize export button text
+            updateExportButtonText();
         });
         
         function setDefaultDates() {
@@ -348,7 +344,7 @@
                     result.data.forEach(sensor => {
                         const option = document.createElement('option');
                         option.value = sensor.port;
-                        option.textContent = `${sensor.port} (${sensor.device_address})`;
+                        option.textContent = sensor.port;
                         sensorSelect.appendChild(option);
                     });
                 }
@@ -366,6 +362,21 @@
                 option.classList.remove('selected');
             });
             document.querySelector(`[data-format="${format}"]`).classList.add('selected');
+            
+            // Update export button text
+            updateExportButtonText();
+        }
+        
+        function updateExportButtonText() {
+            const btn = document.getElementById('export-btn');
+            
+            if (selectedFormat === 'csv') {
+                btn.className = 'btn btn-success btn-export';
+                btn.innerHTML = '<i class="bi bi-file-earmark-spreadsheet"></i> Tải xuống CSV';
+            } else {
+                btn.className = 'btn btn-info btn-export';
+                btn.innerHTML = '<i class="bi bi-file-earmark-code"></i> Tải xuống JSON';
+            }
         }
         
         async function previewData() {
@@ -478,10 +489,10 @@
             const timeFilter = document.getElementById('time-filter').value;
             if (timeFilter && timeFilter !== 'custom') {
                 params.append('days', timeFilter);
+            } else if (timeFilter === 'custom') {
+                // Custom date range will be handled separately - no limit needed
             }
-            
-            // Always set a reasonable limit for exports
-            params.append('limit', '50000'); // Large default limit for export
+            // If no time filter selected ("Tất cả thời gian"), don't set limit = export ALL data from database
             
             return params;
         }
@@ -493,10 +504,11 @@
             
             let filename = 'PZEM004T';
             
-            // Add sensor info if specific sensor selected
+            // Add sensor info - ALWAYS show which sensor/port
             const sensorPort = document.getElementById('sensor-filter').value;
             if (sensorPort) {
-                const portName = sensorPort.replace('/dev/', '').replace('/', '_');
+                // Extract port name more clearly (e.g., /dev/ttyUSB1 -> USB1)
+                let portName = sensorPort.replace('/dev/tty', '').replace('/', '_');
                 filename += `_${portName}`;
             } else {
                 filename += '_ALL_SENSORS';
@@ -509,11 +521,13 @@
                 const endDate = document.getElementById('end-date').value;
                 if (startDate && endDate) {
                     filename += `_${startDate}_to_${endDate}`;
+                } else {
+                    filename += '_custom_range';
                 }
             } else if (timeFilter) {
                 filename += `_last_${timeFilter}days`;
             } else {
-                filename += '_all_time';
+                filename += '_ALL_TIME';
             }
             
             // Add timestamp
@@ -556,13 +570,13 @@
             return { type: 'direct', url, format };
         }
         
-        async function exportData(format) {
+        async function exportData() {
             try {
                 showProgress(true);
                 showStatus('info', 'Đang chuẩn bị file tải xuống...');
                 
-                const exportConfig = buildExportUrl(format);
-                const filename = generateFilename(format);
+                const exportConfig = buildExportUrl(selectedFormat);
+                const filename = generateFilename(selectedFormat);
                 
                 if (exportConfig.type === 'range') {
                     // Handle custom date range export differently
