@@ -2,6 +2,69 @@
 
 Tất cả các thay đổi quan trọng trong dự án này sẽ được ghi lại trong file này.
 
+## [2.2.0] - 2025-01-15 (Current)
+
+### 🌐 Web Dashboard & Production Release
+
+#### ✨ Major Features Added
+- **🌐 Complete Web Dashboard System** với modern UI
+  - Real-time monitoring với interactive charts (Chart.js)
+  - Advanced export center với filtering options
+  - System management với health monitoring
+  - Mobile-responsive design với Bootstrap 5
+- **🔗 Comprehensive REST API** cho mobile integration
+  - 15+ endpoints cho data access và management
+  - WebSocket real-time updates mỗi 5 giây
+  - Auto-generated documentation với Swagger UI
+  - CORS support cho mobile development
+- **🚀 Production-Ready Deployment**
+  - `run_web.py` launcher với health checks
+  - Dependency validation và database verification
+  - Error handling và graceful degradation
+- **📱 Mobile Development Ready**
+  - Complete API ecosystem
+  - WebSocket real-time communication
+  - JSON responses với consistent error handling
+
+#### 🌟 Web Dashboard Features
+- **Dashboard (`/`)**: Live monitoring cards, interactive charts, data filtering
+- **Export (`/export`)**: Multi-format export, batch operations, preview functionality  
+- **Settings (`/settings`)**: System health, database analytics, sensor management
+- **API Documentation (`/docs`)**: Auto-generated Swagger UI
+
+#### 🔧 Enhanced Tools
+- **FastAPI server** (`web/api.py`) với 748 lines of production code
+- **Background tasks**: USB monitoring, connectivity checking
+- **Advanced export**: CSV/JSON với metadata và filtering
+- **System integration**: Web dashboard thay thế GUI tools hoàn toàn
+
+#### 📋 Technical Specifications
+- **Frontend**: Bootstrap 5, Chart.js, WebSocket client
+- **Backend**: FastAPI, uvicorn, SQLite với optimized indexes
+- **Architecture**: RESTful API + WebSocket real-time + responsive UI
+- **Dependencies**: 9 packages (fastapi, uvicorn, pyserial, websockets, etc.)
+- **Performance**: Real-time updates, optimized queries, background processing
+
+#### 🔄 Changed & Enhanced  
+- **Updated requirements.txt** (4 → 9 packages) với web dependencies
+- **Enhanced Makefile** (130 dòng) với web server commands
+- **Improved project structure** với web/ directory
+- **Updated documentation** với web dashboard guide (398 dòng)
+- **Modernized README** với web-first approach
+
+#### 🚨 Breaking Changes
+- **Recommended workflow** changed: Web dashboard now primary interface
+- **Port 8000** required cho web server (configurable)
+- **New dependencies** required cho web functionality
+- **Database-first approach**: CSV storage considered legacy
+
+#### 🏆 Production Benefits
+- **🎯 Single interface**: Web dashboard thay thế multiple CLI tools
+- **📱 Mobile ready**: Complete API cho mobile app development
+- **🔧 Maintenance friendly**: Built-in health monitoring và cleanup
+- **📈 Scalable**: FastAPI async foundation cho high concurrency
+- **🔒 Enterprise ready**: Input validation, error handling, security
+
 ## [2.1.0] - 2025-08-06
 
 ### 🎉 Database & GUI Enhancement Release

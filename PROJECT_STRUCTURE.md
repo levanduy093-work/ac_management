@@ -1,267 +1,343 @@
-# Cấu trúc dự án AC Management
+# 🏗️ Cấu trúc dự án AC Management
 
-## Tổng quan
+## 🎯 Tổng quan
 
-Dự án AC Management là một hệ thống Python chuyên nghiệp để giám sát và ghi dữ liệu từ cảm biến công suất điện PZEM-004T sử dụng giao thức Modbus-RTU. Dự án bao gồm thư viện hoàn chỉnh, ứng dụng giám sát đa cảm biến và các công cụ hỗ trợ.
+AC Management là **hệ thống giám sát điện năng PZEM-004T hoàn chỉnh** với web dashboard hiện đại, REST API, database management và tools hỗ trợ. Hệ thống được thiết kế theo kiến trúc modular với focus vào reliability, scalability và ease of use.
 
-## Cấu trúc thư mục
+## 🗂️ Cấu trúc thư mục
 
 ```
 ac_management/
-├── src/                       # 📚 Thư viện chính
-│   ├── __init__.py           # Package initialization (17 dòng)
-│   ├── pzem.py               # Thư viện PZEM-004T hoàn chỉnh (709 dòng)
-│   └── database.py           # Database module (356 dòng)
-├── tools/                     # 🔧 Công cụ ứng dụng
-│   ├── __init__.py           # Package initialization (7 dòng)
-│   ├── read_ac_sensor.py     # Script giám sát đa cảm biến (CSV) (362 dòng)
-│   ├── read_ac_sensor_db.py  # Script giám sát đa cảm biến (Database) (243 dòng)
-│   ├── query_database.py     # Tool truy vấn database (403 dòng)
-│   ├── database_gui.py       # GUI tool tương tác (618 dòng)
-│   └── reset_energy_no_address_change.py # Tool reset energy AN TOÀN (299 dòng)
-├── docs/                      # 📋 Tài liệu
-│   ├── PZEM004T.md           # Hướng dẫn chi tiết thư viện (572 dòng)
-│   ├── DATA_LOGGING.md       # Hướng dẫn CSV logging (114 dòng)
-│   └── DATABASE.md           # Hướng dẫn database storage (389 dòng)
-├── data/                      # 📊 Dữ liệu
-│   ├── csv_logs/             # File CSV logs
-│   ├── json_log/             # File JSON logs
-│   └── pzem_data.db          # SQLite database
-├── Makefile                   # 🛠️ Quản lý dự án (121 dòng)
-├── requirements.txt           # 📦 Dependencies (4 dòng)
-├── CHANGELOG.md              # 📝 Lịch sử thay đổi (104 dòng)
-├── LICENSE                   # 📄 Giấy phép (22 dòng)
-├── README.md                 # 📖 Tài liệu chính (318 dòng)
-└── PROJECT_STRUCTURE.md      # 📋 File này (256 dòng)
+├── src/                       # 📚 Core Libraries
+│   ├── __init__.py           # Package initialization
+│   ├── pzem.py               # Complete PZEM-004T library (709 dòng)
+│   └── database.py           # SQLite database module (367 dòng)
+├── web/                       # 🌐 Web Dashboard System
+│   ├── api.py                # FastAPI server (748 dòng)
+│   ├── static/               # CSS, JS, assets
+│   ├── templates/            # HTML templates
+│   │   ├── dashboard.html    # Main dashboard
+│   │   ├── export.html       # Data export page
+│   │   └── settings.html     # System settings
+│   └── README.md             # Web documentation
+├── tools/                     # 🔧 Application Tools
+│   ├── __init__.py           # Package initialization
+│   ├── read_ac_sensor_db.py  # Database monitoring (243 dòng)
+│   ├── database_gui.py       # Interactive GUI tool (618 dòng)
+│   ├── query_database.py     # Database query tool (403 dòng)
+│   ├── reset_energy_no_address_change.py # Safe energy reset (299 dòng)
+│   └── read_ac_sensor.py     # Legacy CSV monitoring (362 dòng)
+├── docs/                      # 📋 Documentation
+│   ├── PZEM004T.md           # Library API reference (572 dòng)
+│   ├── DATABASE.md           # Database guide (389 dòng)
+│   └── DATA_LOGGING.md       # Data logging guide (231 dòng)
+├── data/                      # 📊 Data Storage
+│   ├── pzem_data.db          # Main SQLite database
+│   ├── csv_logs/             # CSV export files
+│   └── json_log/             # JSON export files
+├── run_web.py                 # 🚀 Web server launcher (116 dòng)
+├── Makefile                   # 🛠️ Project management (130 dòng)
+├── requirements.txt           # 📦 Dependencies (9 packages)
+├── CHANGELOG.md              # 📝 Version history
+├── LICENSE                   # 📄 MIT License
+├── README.md                 # 📖 Main documentation
+├── PROJECT_STRUCTURE.md      # 📋 This file
+└── WEB_DASHBOARD_GUIDE.md    # 🌐 Web dashboard guide (398 dòng)
 ```
 
-## Mô tả chi tiết
+## 📋 Mô tả chi tiết từng module
 
-### 📚 Thư viện chính (`src/`)
+### 📚 Core Libraries (`src/`)
 
-#### `src/__init__.py` (17 dòng)
-- Khởi tạo package Python
-- Export các class chính: `PZEM004T`, `PZEM004Tv30`
-- Version: 2.0.0
-- Author: AC Management Team
+#### `src/pzem.py` (709 dòng) - PZEM-004T Library ⭐
+- **Complete Modbus-RTU implementation** theo datasheet chính thức
+- **Full API support**: đọc dữ liệu, cấu hình, reset, calibration
+- **Smart caching**: Tối ưu hiệu suất với 0.1s interval
+- **Error handling**: CRC validation, timeout, retry mechanism
+- **Backward compatibility**: Hỗ trợ tên class cũ `PZEM004Tv30`
+- **Safety focus**: Verified operations và comprehensive logging
 
-#### `src/pzem.py` (709 dòng)
-- **Thư viện PZEM-004T hoàn chỉnh** với triển khai đầy đủ giao thức Modbus-RTU
-- Hỗ trợ tất cả function codes và register mapping theo tài liệu kỹ thuật
-- Xử lý lỗi toàn diện với CRC validation và error handling
-- Cache thông minh để tối ưu hiệu suất (update_interval = 0.1s)
-- API đầy đủ cho đọc dữ liệu, cấu hình và điều khiển
-- Tương thích ngược với tên class cũ `PZEM004Tv30`
-- Hỗ trợ calibration và reset energy với verification
-- **Cải tiến reset energy** với retry mechanism và timeout thông minh
+#### `src/database.py` (367 dòng) - Database Management
+- **SQLite database manager** với 2 bảng: `sensors` và `measurements`
+- **Automatic optimization**: Indexes, foreign keys, cleanup
+- **Rich API**: Statistics, queries, export functionality
+- **Thread-safe operations** cho concurrent access
+- **Data integrity**: Validation và error handling
 
-#### `src/database.py` (356 dòng)
-- **Database module** cho SQLite database
-- Quản lý bảng `sensors` và `measurements`
-- API để lưu trữ và truy vấn dữ liệu PZEM-004T
-- Tự động tạo indexes cho hiệu suất tốt
-- Hỗ trợ cleanup dữ liệu cũ
-- Thống kê database chi tiết
+### 🌐 Web Dashboard System (`web/`) - NEW ⭐
 
-### 🔧 Công cụ ứng dụng (`tools/`)
+#### `web/api.py` (748 dòng) - FastAPI Server
+- **Modern REST API** với FastAPI framework
+- **Real-time WebSocket** cho live updates
+- **Comprehensive endpoints**: 
+  - Dashboard data aggregation
+  - Sensor management và statistics
+  - Export functionality (CSV/JSON)
+  - System health monitoring
+- **Mobile-ready**: CORS support, proper response formats
+- **Background tasks**: USB monitoring, real-time updates
+- **Security**: Input validation, error handling
 
-#### `tools/__init__.py` (7 dòng)
-- Khởi tạo package tools
-- Version: 2.0.0
+#### `web/templates/` - HTML Templates
+- **`dashboard.html`**: Main monitoring interface với Chart.js
+- **`export.html`**: Advanced export với filtering options
+- **`settings.html`**: System management và configuration
+- **Responsive design**: Bootstrap 5, mobile-friendly
+- **Interactive features**: Real-time charts, WebSocket integration
 
-#### `tools/read_ac_sensor.py` (362 dòng)
-- **Script giám sát đa cảm biến với CSV storage**
-- Tự động phát hiện và kết nối với các thiết bị PZEM-004T
-- Hỗ trợ nhiều loại USB-to-Serial adapter: PL2303, CH340, CP210, FTDI
-- Đọc dữ liệu từ nhiều cảm biến cùng lúc với threading
-- Hiển thị dạng bảng với thông tin tổng hợp
-- Ghi dữ liệu CSV với timestamp và quản lý file size
-- Cơ chế retry và error handling toàn diện
-- Tính tổng công suất và năng lượng của tất cả cảm biến
+#### `web/static/` - Frontend Assets
+- **CSS styling**: Custom themes, responsive layouts
+- **JavaScript**: Chart.js integration, WebSocket handling
+- **Assets**: Icons, images, fonts
 
-#### `tools/read_ac_sensor_db.py` (243 dòng)
-- **Script giám sát đa cảm biến với Database storage**
-- Tương tự `read_ac_sensor.py` nhưng lưu vào SQLite database
-- Sử dụng `database.py` module để quản lý dữ liệu
-- Hiệu suất tốt hơn cho dữ liệu lớn
-- Tự động quản lý sensors và measurements
-- Thống kê real-time từ database
+### 🔧 Application Tools (`tools/`)
 
-#### `tools/query_database.py` (403 dòng)
-- **Tool truy vấn database** với nhiều tùy chọn
-- Command line interface cho truy vấn dữ liệu
-- Export dữ liệu ra CSV và JSON
-- Hỗ trợ export single file và separate files by port
-- Tùy chọn overwrite hoặc tạo file mới với timestamp
-- Filter theo port, thời gian, số lượng records
-- Thống kê database và sensor summary
+#### `tools/read_ac_sensor_db.py` (243 dòng) - Main Monitoring ⭐
+- **Primary monitoring tool** cho database storage
+- **Multi-sensor concurrent reading** với threading
+- **Auto-discovery**: Tìm và kết nối PZEM-004T tự động
+- **Real-time display**: Table format với total power/energy
+- **Database integration**: Lưu trữ hiệu quả vào SQLite
+- **Error resilience**: Retry mechanism, timeout handling
+- **Adapter support**: PL2303, CH340, CP210, FTDI
 
-#### `tools/database_gui.py` (618 dòng)
-- **GUI tool tương tác** cho quản lý database
-- Menu-driven interface dễ sử dụng
-- Xem thống kê database và sensor summary
-- Export dữ liệu với giao diện thân thiện
-- Advanced queries và cleanup tools
-- Không cần nhớ command line options
+#### `tools/database_gui.py` (618 dòng) - GUI Management ⭐
+- **Interactive GUI tool** cho database management
+- **Menu-driven interface**: Không cần nhớ commands
+- **Complete functionality**:
+  - Database statistics và sensor summary
+  - Export data (CSV/JSON) với overwrite options
+  - Advanced queries (by port, date range, statistics)
+  - Cleanup old data với confirmation
+- **User-friendly**: Perfect cho non-technical users
 
-#### `tools/reset_energy_no_address_change.py` (299 dòng)
-- **Tool reset energy counter AN TOÀN** - KHÔNG thay đổi địa chỉ PZEM
-- Tự động phát hiện thiết bị PZEM-004T
-- Reset bộ đếm năng lượng cho từng thiết bị tuần tự
-- **Giữ nguyên địa chỉ mặc định** (0xF8) để tránh ảnh hưởng cấu hình
-- Sử dụng timeout ngắn và retry mechanism để tránh xung đột
-- Hiển thị trạng thái reset và báo cáo kết quả chi tiết
-- Hỗ trợ nhiều loại USB-to-Serial adapter
-- Menu tương tác dễ sử dụng
-- **Giải pháp tối ưu** cho vấn đề reset với nhiều thiết bị
+#### `tools/query_database.py` (403 dòng) - CLI Power Tool
+- **Command-line database interface** cho advanced users
+- **Flexible export options**:
+  - Single file export hoặc separate by port
+  - CSV và JSON formats
+  - Date filtering, port filtering, record limits
+  - Overwrite control hoặc timestamp files
+- **Statistics display**: Database stats, sensor summary
+- **Cleanup functions**: Automated old data removal
 
-### 📋 Tài liệu (`docs/`)
+#### `tools/reset_energy_no_address_change.py` (299 dòng) - Safety Tool ⭐
+- **SAFE energy reset tool** - KHÔNG thay đổi địa chỉ thiết bị
+- **Sequential reset**: Tránh conflicts khi có nhiều devices
+- **Smart timeout**: Retry mechanism với conflict detection  
+- **Address preservation**: Giữ nguyên default address (0xF8)
+- **Interactive menu**: User-friendly với confirmations
+- **Conflict resolution**: Handles multiple devices cùng địa chỉ
 
-#### `docs/PZEM004T.md` (572 dòng)
-- **Hướng dẫn chi tiết thư viện** với API reference đầy đủ
-- Ví dụ sử dụng thực tế và troubleshooting guide
-- Thông số kỹ thuật chi tiết theo datasheet
-- Hướng dẫn kết nối phần cứng và cài đặt
+#### `tools/read_ac_sensor.py` (362 dòng) - Legacy CSV Tool
+- **Original CSV-based monitoring** (maintained for compatibility)
+- **CSV file per sensor** với timestamp management
+- **Threading support** cho multiple sensors
+- **File size management** với auto-cleanup
+- **Similar features** như database version nhưng CSV output
 
-#### `docs/DATA_LOGGING.md` (114 dòng)
-- **Hướng dẫn CSV logging** với cấu trúc file chi tiết
-- Quản lý dữ liệu và phân tích
-- Backup và dọn dẹp dữ liệu cũ
+### 📋 Documentation (`docs/`)
 
-#### `docs/DATABASE.md` (389 dòng)
-- **Hướng dẫn database storage** với SQLite
-- Cấu trúc database và schema
-- Sử dụng database tools và GUI
-- Migration từ CSV sang database
-- Quản lý và backup database
+#### `docs/PZEM004T.md` (572 dòng) - Library Reference
+- **Complete API documentation** cho PZEM-004T library
+- **Technical specifications** theo official datasheet
+- **Hardware connection guide** với wiring diagrams
+- **Usage examples** từ basic đến advanced
+- **Troubleshooting guide** cho common issues
 
-### 📊 Dữ liệu (`data/`)
+#### `docs/DATABASE.md` (389 dòng) - Database Guide  
+- **SQLite database management** comprehensive guide
+- **Schema documentation**: tables, indexes, relationships
+- **Tool usage**: GUI, CLI, migration
+- **Performance optimization** và maintenance
+- **Backup và recovery** procedures
 
-#### `data/csv_logs/`
-- **File CSV logs** cho từng cảm biến với dữ liệu thực tế
-- Tên file dựa trên cổng serial: `pzem__{port_name}.csv`
-- Cấu trúc: datetime, port, voltage_v, current_a, power_w, energy_wh, frequency_hz, power_factor, alarm_status
-- Dữ liệu với timestamp chính xác và tất cả thông số đo
+#### `docs/DATA_LOGGING.md` (231 dòng) - Data Management
+- **Data logging strategies**: CSV vs Database
+- **Export functionality** và formats
+- **Data analysis examples** với pandas
+- **Cleanup và maintenance** best practices
 
-#### `data/json_log/`
-- **File JSON logs** cho export dữ liệu
-- Tên file: `export.json` hoặc `pzem_{port_name}.json`
-- Format JSON với indent và UTF-8 encoding
-- Dữ liệu tương tự CSV nhưng dạng JSON
+### 🚀 Web Server Launcher
 
-#### `data/pzem_data.db`
-- **SQLite database** chính cho lưu trữ dữ liệu
-- Bảng `sensors`: thông tin cảm biến
-- Bảng `measurements`: dữ liệu đo
-- Indexes cho hiệu suất truy vấn tốt
-- Tự động quản lý và cleanup
+#### `run_web.py` (116 dòng) - FastAPI Launcher ⭐
+- **Intelligent web server launcher** với comprehensive checks
+- **Dependency validation**: Kiểm tra required packages
+- **Database verification**: Ensures data availability
+- **Configuration options**: Host, port, reload, skip-checks
+- **User-friendly output**: Status messages và helpful URLs
+- **Error handling**: Graceful degradation và helpful messages
 
-### 🛠️ Quản lý dự án
+### 🛠️ Project Management
 
-#### `Makefile` (121 dòng)
-- **Quản lý dự án** với các commands tiện lợi
-- Install dependencies và development tools
-- Run monitoring scripts (CSV và Database)
-- Database operations (stats, sensors, cleanup)
-- Export data và GUI tools
-- Code quality (lint, format)
+#### `Makefile` (130 dòng) - Development Workflow ⭐
+- **Complete project automation** với 25+ commands
+- **Quick start**: `make run-monitor-db`, `make run-web`
+- **Database operations**: stats, cleanup, migration
+- **Development tools**: lint, format, test
+- **Documentation**: `make docs`
+- **Installation**: `make install`, `make install-dev`
 
-#### `requirements.txt` (4 dòng)
-- **Dependencies** cần thiết:
-  - `pyserial`: Serial communication
-  - `tabulate`: Table formatting
-  - `pandas`: Data analysis
+#### `requirements.txt` (9 packages) - Dependencies
+- **Core dependencies**:
+  - `fastapi`, `uvicorn`: Web server framework
+  - `pyserial`: PZEM communication
+  - `tabulate`, `pandas`: Data processing
+  - `websockets`: Real-time communication
+  - `jinja2`, `aiofiles`: Web templating
 
-#### `CHANGELOG.md` (104 dòng)
-- **Lịch sử thay đổi** chi tiết
-- Version 2.0.0: Complete library rewrite
-- Major features và bug fixes
-- Breaking changes và improvements
+### 📊 Data Storage (`data/`)
 
-#### `LICENSE` (22 dòng)
-- **MIT License** cho dự án
-- Cho phép sử dụng tự do với attribution
+#### `data/pzem_data.db` - Main Database ⭐
+- **Primary SQLite database** cho production data
+- **Schema optimized**: 2 tables với proper relationships
+- **Performance indexes**: Fast queries on timestamp và sensor_id
+- **Auto-management**: Self-cleanup, statistics tracking
+- **Backup-friendly**: Single file cho easy backup
 
-## Tính năng chính
+#### `data/csv_logs/` - CSV Exports
+- **Export destination** cho CSV files
+- **Naming convention**: `pzem_{port_name}.csv` hoặc `export.csv`
+- **Column structure**: datetime, port, voltage_v, current_a, power_w, energy_wh, frequency_hz, power_factor, alarm_status
+- **Legacy compatibility**: Supports old CSV workflow
 
-### 🔌 Thư viện PZEM-004T
-- **Đọc đầy đủ dữ liệu**: Voltage, Current, Power, Energy, Frequency, Power Factor
-- **Cấu hình thiết bị**: Set/Get power alarm threshold, change device address
-- **Điều khiển**: Reset energy counter, calibration (factory use)
-- **Xử lý lỗi**: CRC validation, Modbus error handling, retry mechanism
-- **Cache thông minh**: Tối ưu hiệu suất với cache dữ liệu (0.1s interval)
-- **API linh hoạt**: Đọc từng giá trị hoặc tất cả cùng lúc
-- **Tương thích ngược**: Hỗ trợ cả tên class cũ và mới
+#### `data/json_log/` - JSON Exports  
+- **Export destination** cho JSON files
+- **Format**: UTF-8 encoded với proper indentation
+- **Metadata included**: Export timestamp, record count
+- **API compatible**: Ready for mobile app consumption
 
-### 📊 Ứng dụng giám sát
-- **Tự động phát hiện cảm biến**: Quét và kết nối tự động với các thiết bị PZEM-004T
-- **Đa cảm biến**: Hỗ trợ đọc từ nhiều cảm biến cùng lúc với threading
-- **Hiển thị dạng bảng**: Dữ liệu từ tất cả cảm biến hiển thị trong bảng thống nhất
-- **Thông tin tổng hợp**: Tính tổng công suất và năng lượng của tất cả cảm biến
-- **Cơ chế retry**: Tự động thử lại khi gặp lỗi kết nối
-- **Hỗ trợ adapter mở rộng**: PL2303, CH340, CP210, FTDI
+### 📚 Project Documentation
 
-### 💾 Lưu trữ dữ liệu
-- **CSV Storage**: File riêng biệt cho từng cảm biến
-- **Database Storage**: SQLite với hiệu suất cao và quản lý tốt
-- **Export Tools**: CSV và JSON với nhiều tùy chọn
-- **GUI Interface**: Tương tác dễ dàng không cần command line
+#### `README.md` - Main Documentation ⭐
+- **Project overview** và quick start guide
+- **Web dashboard features** và screenshots
+- **Installation instructions** và requirements
+- **Usage examples** cho tất cả major features
+- **Architecture overview** và development roadmap
 
-### 🔧 Công cụ hỗ trợ
-- **Reset Energy Tool**: AN TOÀN - không thay đổi địa chỉ PZEM
-- **Database Management**: Stats, cleanup, migration
-- **Export Tools**: Command line và GUI
-- **Error Handling**: Comprehensive error handling và retry mechanisms
+#### `PROJECT_STRUCTURE.md` - This File
+- **Complete project structure** documentation
+- **Module descriptions** với technical details
+- **Development guidelines** và architecture notes
+- **File purposes** và relationships
 
-## Cách sử dụng
+#### `WEB_DASHBOARD_GUIDE.md` (398 dòng) - Web Guide ⭐
+- **Comprehensive web dashboard** documentation
+- **Feature overview**: Dashboard, export, settings
+- **API documentation** cho mobile development
+- **Deployment instructions** và configuration
+- **Troubleshooting guide** và performance tips
 
-### Cài đặt
+#### `CHANGELOG.md` - Version History
+- **Detailed version history** với semantic versioning
+- **Feature additions** và improvements
+- **Bug fixes** và breaking changes
+- **Migration guides** between versions
+
+#### `LICENSE` - MIT License
+- **Open source license** cho commercial và personal use
+- **Attribution requirements** và disclaimer
+
+## 🌟 Key Features Implemented
+
+### 🌐 Web Dashboard System (v2.1.0+) ⭐
+- **Modern web interface** với real-time monitoring
+- **Interactive charts** sử dụng Chart.js
+- **REST API endpoints** cho mobile integration
+- **WebSocket real-time** updates mỗi 5 giây
+- **Responsive design** compatible với mobile/desktop
+- **Advanced export** với filtering và format options
+- **System management** với health monitoring
+
+### 🔌 Complete PZEM-004T Library
+- **Full Modbus-RTU implementation** theo official datasheet
+- **Complete API**: Read, configure, reset, calibration
+- **Smart caching** với 0.1s interval optimization
+- **Error resilience**: CRC validation, retry mechanisms
+- **Backward compatibility** với existing projects
+- **Safety-focused operations** với verification
+
+### 💾 Database Management System
+- **SQLite storage** với optimized schema
+- **Concurrent access** support với thread safety
+- **Auto-cleanup** và maintenance functions
+- **Rich statistics** và monitoring capabilities
+- **Export functionality** với multiple formats
+- **GUI và CLI tools** cho management
+
+### 🔧 Safety-First Tools
+- **Energy reset tool** không thay đổi address
+- **Multi-device support** với conflict resolution
+- **Interactive menus** với confirmations
+- **Error recovery** và retry mechanisms
+
+## 🚀 Quick Usage Guide
+
+### 🌐 Web Dashboard (Recommended)
 ```bash
-git clone https://github.com/levanduy093-work/ac_management.git
-cd ac_management
-pip install -r requirements.txt
-```
-
-### Chạy giám sát
-```bash
-# CSV storage
-make run-monitor
-
-# Database storage (khuyến nghị)
+# Start data collection (Terminal 1)
 make run-monitor-db
+
+# Start web dashboard (Terminal 2)  
+make run-web
+
+# Access: http://localhost:8000
 ```
 
-### Quản lý database
+### 🔧 Standalone Tools
 ```bash
-# GUI tool (khuyến nghị)
+# Database monitoring
+make run-monitor-db
+
+# GUI database management
 make db-gui
 
-# Command line
-make db-stats
-make db-sensors
-make db-latest
-make db-cleanup
-```
-
-### Reset energy
-```bash
+# Energy reset (safe)
 make run-reset
+
+# Database statistics
+make db-stats
 ```
 
-## Phát triển
+### 📱 API Development
+```bash
+# API documentation
+http://localhost:8000/docs
 
-### Cấu trúc code
-- **Modular design**: Tách biệt thư viện, tools, và documentation
-- **Error handling**: Comprehensive error handling trong tất cả modules
-- **Documentation**: Detailed documentation cho tất cả components
-- **Testing**: Ready for unit tests và integration tests
+# WebSocket real-time
+ws://localhost:8000/ws/realtime
 
-### Contributing
-- Fork dự án
-- Tạo feature branch
-- Commit changes với descriptive messages
-- Push và tạo Pull Request
+# REST endpoints
+http://localhost:8000/api/measurements
+```
 
-## License
+## 🏗️ Development & Architecture
 
-MIT License - xem file [LICENSE](LICENSE) để biết thêm chi tiết. 
+### System Architecture
+```
+Hardware (PZEM-004T) → Serial → Library → Database → Web/API → Frontend
+```
+
+### Design Principles
+- **Modular architecture**: Tách biệt concerns
+- **Safety first**: Không làm hỏng configuration
+- **User-friendly**: GUI tools cho non-technical users  
+- **Production-ready**: Error handling, logging, monitoring
+- **Mobile-ready**: API design cho mobile integration
+
+### Technology Stack
+- **Backend**: Python 3.9+, FastAPI, SQLite
+- **Frontend**: Bootstrap 5, Chart.js, WebSocket
+- **Communication**: Modbus-RTU, pyserial
+- **Data**: SQLite, CSV, JSON export
+
+## 📄 License & Contributing
+
+**MIT License** - Free for commercial và personal use. See [LICENSE](LICENSE) for details.
+
+**Contributing**: Fork → Feature branch → Test → Pull Request
+
+---
+
+**AC Management v2.1.0+** - Production-ready PZEM-004T monitoring system với web dashboard, database management, và comprehensive tooling. 

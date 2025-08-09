@@ -1,83 +1,155 @@
-# 🌐 PZEM-004T Web Dashboard - Hướng dẫn đầy đủ
+# 🌐 PZEM-004T Web Dashboard - Complete Guide
 
 ## 📋 Tổng quan
 
-Hệ thống web monitoring hoàn chỉnh cho PZEM-004T với dashboard hiện đại, API RESTful và khả năng real-time monitoring.
+**Production-ready web monitoring system** cho PZEM-004T với modern dashboard, comprehensive REST API, real-time updates và mobile-friendly interface. Được thiết kế để thay thế hoàn toàn GUI tools với web-based solution.
 
-## ✨ Tính năng đã được triển khai
+## ✨ Features Overview - Production Ready
 
-### 🎯 Dashboard chính (`/`)
-- ✅ **Real-time monitoring cards**: Hiển thị tổng công suất, năng lượng, điện áp trung bình, số cảm biến
-- ✅ **Interactive charts**: 
-  - Biểu đồ công suất theo thời gian
-  - Biểu đồ điện áp & dòng điện
-  - Sử dụng Chart.js với time series
-- ✅ **Date filtering**: Lọc dữ liệu theo khoảng thời gian
-- ✅ **Sensor filtering**: Lọc theo cảm biến cụ thể
-- ✅ **Real-time updates**: Tự động cập nhật mỗi 5 giây
-- ✅ **Data table**: Bảng hiển thị measurements với pagination
-- ✅ **Responsive design**: Tương thích mobile và desktop
+### 🎯 Main Dashboard (`/`) - Real-time Monitoring ⭐
+- 🎮 **Live monitoring cards**: 
+  - Total power consumption across all sensors
+  - Total energy accumulated  
+  - Average voltage monitoring
+  - Active sensor count với connectivity status
+- 📊 **Interactive Charts** (Chart.js powered):
+  - Power consumption timeline với zoom/pan
+  - Voltage & Current monitoring graphs  
+  - Real-time updates every 5 seconds
+  - Time series optimization cho performance
+- 🔍 **Advanced Filtering**:
+  - Date range picker với preset options
+  - Individual sensor selection
+  - Auto-refresh controls
+- 📋 **Smart Data Table**:
+  - Latest measurements với sorting/pagination
+  - Real-time row updates
+  - Export selected data
+- 📱 **Fully Responsive**: Perfect on mobile, tablet, desktop
 
-### 📁 Export data (`/export`)
-- ✅ **Multiple formats**: CSV và JSON
-- ✅ **Advanced filtering**: Theo thời gian, cảm biến, số bản ghi
-- ✅ **Preview function**: Xem trước dữ liệu trước khi xuất
-- ✅ **Batch export**: Xuất riêng biệt theo cảm biến
-- ✅ **Progress tracking**: Thanh tiến trình khi xuất
+### 📁 Export Center (`/export`) - Data Management ⭐
+- 📄 **Multi-format Export**:
+  - CSV với proper encoding
+  - JSON với metadata
+  - Excel-compatible formatting
+- 🎛️ **Advanced Filtering Engine**:
+  - Date range selection với calendar picker
+  - Multi-sensor selection
+  - Record limit controls  
+  - Preview before download
+- 🚀 **Batch Operations**:
+  - Export all sensors separately
+  - Bulk download với progress tracking
+  - Background processing cho large datasets
+- 👁️ **Data Preview**: Live preview với sample data
 
-### ⚙️ Settings (`/settings`)
-- ✅ **System health monitoring**: Kiểm tra trạng thái hệ thống
-- ✅ **Database statistics**: Thống kê chi tiết database
-- ✅ **Sensor management**: Quản lý và giám sát cảm biến
-- ✅ **Data cleanup**: Dọn dẹp dữ liệu cũ
-- ✅ **Backup functions**: Sao lưu dữ liệu
-- ✅ **API information**: Thông tin endpoints cho mobile app
+### ⚙️ System Settings (`/settings`) - Management Center ⭐  
+- 💚 **Health Monitoring Dashboard**:
+  - System status indicators
+  - Database connectivity checks
+  - API performance metrics
+  - Real-time sensor connectivity
+- 📊 **Database Analytics**:
+  - Storage statistics và growth trends
+  - Query performance metrics
+  - Data integrity checks
+- 🔌 **Sensor Management**:
+  - Live sensor discovery
+  - Connection status monitoring  
+  - Device configuration view
+- 🗑️ **Maintenance Tools**:
+  - Automated cleanup scheduling
+  - Database optimization
+  - Backup management
+- 🚨 **Danger Zone**: Advanced operations với confirmations
 
-### 🔗 REST API (cho mobile app)
-- ✅ `GET /api/stats` - Database statistics
-- ✅ `GET /api/sensors` - Sensor summary  
-- ✅ `GET /api/measurements` - Latest measurements với filtering
-- ✅ `GET /api/measurements/range` - Measurements theo date range
-- ✅ `GET /api/dashboard` - Complete dashboard data
-- ✅ `GET /api/sensor/{id}/stats` - Individual sensor statistics
-- ✅ `GET /api/export/csv` - Export CSV
-- ✅ `GET /api/export/json` - Export JSON
-- ✅ `DELETE /api/cleanup` - Cleanup old data
-- ✅ `GET /api/health` - Health check
-- ✅ `WS /ws/realtime` - WebSocket real-time updates
+### 🔗 REST API Ecosystem - Mobile Ready ⭐
 
-## 🚀 Cách sử dụng
+#### Core Data Endpoints
+- `GET /api/dashboard` - Complete dashboard data aggregation
+- `GET /api/measurements` - Paginated measurements với rich filtering
+- `GET /api/measurements/range` - Date range queries với optimization
+- `GET /api/sensors` - Sensor inventory với status
+- `GET /api/sensor/{id}/stats` - Individual sensor analytics
 
-### 1. Cài đặt dependencies
+#### Export & Management
+- `GET /api/export/csv` - Streaming CSV export
+- `GET /api/export/json` - JSON export với metadata
+- `DELETE /api/cleanup` - Data lifecycle management
+- `DELETE /api/measurements` - Bulk data removal
+- `DELETE /api/database/reset` - Full database reset
+
+#### System Operations  
+- `GET /api/health` - System health checks
+- `GET /api/stats` - Database statistics
+- `GET /api/sensors/connectivity` - Real-time connectivity status
+- `WS /ws/realtime` - WebSocket live updates
+- `WS /ws` - General WebSocket connection
+
+#### Advanced Features
+- **Auto-documentation**: Swagger UI tại `/docs`
+- **Error handling**: Consistent JSON error responses
+- **CORS support**: Ready cho mobile development
+- **Background tasks**: USB monitoring, cleanup scheduling
+
+## 🚀 Setup & Deployment Guide
+
+### 1. Quick Start (2 minutes) ⭐
 ```bash
+# Clone và setup
+git clone https://github.com/levanduy093-work/ac_management.git
+cd ac_management
 pip install -r requirements.txt
-```
 
-### 2. Chạy web server
+# Start data collection (Terminal 1)
+make run-monitor-db
 
-#### Cách đơn giản nhất
-```bash
-# Sử dụng script startup
-python run_web.py
-
-# Hoặc với Makefile
+# Start web dashboard (Terminal 2)
 make run-web
 
+# Access: http://localhost:8000
+```
+
+### 2. Production Deployment
+
+#### Using run_web.py (Recommended) ⭐
+```bash
+# Production mode với health checks
+python run_web.py --host 0.0.0.0 --port 8000
+
 # Development mode với auto-reload
+python run_web.py --reload
+
+# Custom configuration
+python run_web.py --host 192.168.1.100 --port 8080 --skip-checks
+```
+
+#### Using Makefile (Simplified)
+```bash
+# Production web server
+make run-web
+
+# Development mode với auto-reload  
 make run-web-dev
 ```
 
-#### Cách thủ công
+#### Manual uvicorn (Advanced)
 ```bash
 cd web/
-uvicorn api:app --host 0.0.0.0 --port 8000 --reload
+uvicorn api:app --host 0.0.0.0 --port 8000 --workers 4 --log-level info
 ```
 
-### 3. Truy cập dashboard
-- **Dashboard chính**: http://localhost:8000
-- **Export dữ liệu**: http://localhost:8000/export
-- **Cài đặt**: http://localhost:8000/settings
-- **API Documentation**: http://localhost:8000/docs
+### 3. Access Points ⭐
+- **🏠 Main Dashboard**: http://localhost:8000
+- **📁 Export Center**: http://localhost:8000/export  
+- **⚙️ System Settings**: http://localhost:8000/settings
+- **📚 API Documentation**: http://localhost:8000/docs
+- **🔄 Health Check**: http://localhost:8000/api/health
+
+### 4. Mobile Development
+- **📱 Base API URL**: `http://localhost:8000/api/`
+- **🔌 WebSocket**: `ws://localhost:8000/ws/realtime`
+- **📖 Interactive Docs**: `http://localhost:8000/docs`
 
 ## 📊 Demo với dữ liệu
 
@@ -332,26 +404,37 @@ chmod +x run_web.py
 3. **Mobile app**: React Native hoặc Flutter
 4. **Cloud deployment**: Docker + Kubernetes
 
-## 🤝 Integration với hệ thống hiện có
+## 🔗 System Integration & Migration
 
-### Với database_gui.py
-Web dashboard bao gồm tất cả chức năng của database_gui.py:
-- ✅ View database stats → `/settings`
-- ✅ View sensor summary → `/settings`  
-- ✅ View latest measurements → Dashboard table
-- ✅ Export data → `/export`
-- ✅ Cleanup old data → `/settings`
-- ✅ Advanced queries → Dashboard filtering
+### 🎯 Complete GUI Replacement 
+Web dashboard provides **ALL functionality** of standalone tools với better UX:
 
-### Với monitoring scripts
-- `read_ac_sensor_db.py` tạo dữ liệu
-- Web dashboard hiển thị dữ liệu real-time
-- API cung cấp dữ liệu cho mobile apps
+| Legacy Tool | Web Equivalent | Benefits |
+|-------------|----------------|----------|
+| `database_gui.py` | `/settings` page | ✅ Remote access, better UX |
+| `query_database.py` | `/export` page | ✅ Visual interface, preview |
+| Manual monitoring | `/` dashboard | ✅ Real-time charts, mobile |
+| CSV analysis | API endpoints | ✅ Programmatic access |
 
-### Với tools hiện có
-- `query_database.py` → API endpoints
-- `reset_energy_no_address_change.py` → Có thể integrate vào settings
-- Migration tools → Có thể thêm vào settings
+### 🏗️ Architecture Integration
+```
+PZEM Hardware → read_ac_sensor_db.py → SQLite → Web Dashboard → Users
+                                              ↓
+                                           REST API → Mobile App
+```
+
+### 📱 Mobile Development Ready
+- ✅ **Complete REST API** với comprehensive endpoints
+- ✅ **Real-time WebSocket** cho live updates  
+- ✅ **CORS enabled** cho cross-origin requests
+- ✅ **Auto-documentation** với Swagger UI
+- ✅ **Consistent error handling** và response formats
+
+### 🔄 Legacy Tool Compatibility
+- **CSV exports** vẫn available cho existing workflows
+- **CLI tools** remain functional cho automation scripts
+- **Database schema** unchanged để maintain data continuity
+- **Backward compatibility** với existing monitoring scripts
 
 ## 📞 Support
 
@@ -374,24 +457,45 @@ curl http://localhost:8000/api/health
 
 ---
 
-## 🎉 Kết luận
+## 🎉 Conclusion - Production Ready System
 
-Hệ thống web dashboard đã được xây dựng hoàn chỉnh với:
+**AC Management Web Dashboard** là một **production-ready monitoring solution** với:
 
-1. **✅ Dashboard hiện đại** với real-time charts và monitoring
-2. **✅ API RESTful đầy đủ** cho mobile applications  
-3. **✅ Export functionality** với multiple formats
-4. **✅ Settings management** cho system administration
-5. **✅ Real-time updates** qua WebSocket
-6. **✅ Responsive design** cho mobile và desktop
-7. **✅ Documentation đầy đủ** cho developers
+### ✅ Complete Feature Set
+1. **🎯 Modern Dashboard** với real-time monitoring và interactive charts
+2. **📁 Advanced Export System** với filtering và batch operations  
+3. **⚙️ System Management** với health monitoring và maintenance tools
+4. **🔗 Comprehensive REST API** cho mobile development
+5. **🔄 Real-time Updates** qua WebSocket integration
+6. **📱 Mobile-Ready Design** với responsive UI và API
+7. **📚 Auto-Generated Documentation** với Swagger UI
 
-Hệ thống sẵn sàng để sử dụng và có thể mở rộng thêm các tính năng trong tương lai!
+### 🏆 Production Benefits
+- **🚀 Easy Deployment**: Single command setup với health checks
+- **📈 Scalable Architecture**: FastAPI async foundation
+- **🔒 Enterprise Ready**: Input validation, error handling, logging
+- **🔧 Maintenance Friendly**: Built-in cleanup, monitoring, backup tools
+- **📱 Mobile Integration**: Complete API ecosystem cho app development
 
-**🚀 Để bắt đầu:**
+### 🚀 Quick Start (1 minute)
 ```bash
-make run-monitor-db  # Terminal 1: Start data collection
-make run-web         # Terminal 2: Start web dashboard
+# 1. Setup project
+git clone <repo> && cd ac_management && pip install -r requirements.txt
+
+# 2. Start monitoring (Terminal 1)
+make run-monitor-db
+
+# 3. Start web dashboard (Terminal 2) 
+make run-web
+
+# 4. Access: http://localhost:8000
 ```
 
-Sau đó truy cập http://localhost:8000 để sử dụng dashboard!
+### 📱 For Mobile Developers
+- **📖 API Docs**: http://localhost:8000/docs  
+- **🔌 WebSocket**: ws://localhost:8000/ws/realtime
+- **🎯 Base URL**: http://localhost:8000/api/
+
+---
+
+**🌟 AC Management v2.1.0+** - From hardware monitoring đến production web dashboard, everything you need cho professional PZEM-004T power monitoring.

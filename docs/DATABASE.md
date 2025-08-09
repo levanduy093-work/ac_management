@@ -1,19 +1,20 @@
-# 📊 Database Storage Guide
+# 📊 Database Management Guide
 
-Hướng dẫn sử dụng SQLite database để lưu trữ dữ liệu PZEM-004T thay vì file CSV.
+Comprehensive guide cho SQLite database system của PZEM-004T, bao gồm CLI tools, GUI management, và web dashboard integration.
 
 ## 🎯 Tổng quan
 
 Dự án đã được mở rộng để hỗ trợ lưu trữ dữ liệu trong SQLite database thay vì file CSV. Điều này mang lại nhiều lợi ích:
 
-### ✅ Ưu điểm của Database
+### ✅ Database System Advantages
 
-- **Hiệu suất tốt hơn**: Truy vấn nhanh với indexes
-- **Quản lý dữ liệu tốt hơn**: Không bị phân mảnh như CSV
-- **Truy vấn linh hoạt**: SQL queries mạnh mẽ
-- **Tự động dọn dẹp**: Xóa dữ liệu cũ tự động
-- **Thống kê chi tiết**: Theo dõi sensors và measurements
-- **Backup dễ dàng**: Chỉ cần copy 1 file database
+- **🚀 Performance**: Optimized queries với indexes, faster than CSV
+- **🎯 Modern Access**: Web dashboard, CLI tools, GUI management  
+- **🔧 Auto-Management**: Self-cleanup, maintenance, optimization
+- **📊 Rich Analytics**: Statistics, trends, monitoring dashboards
+- **💾 Single File**: Easy backup, deployment, migration
+- **📱 API Ready**: REST endpoints cho mobile integration
+- **🔄 Real-time**: WebSocket updates, live monitoring
 
 ### 📁 Cấu trúc Database
 
@@ -49,39 +50,61 @@ CREATE TABLE measurements (
 );
 ```
 
-## 🚀 Sử dụng Database
+## 🚀 Database Access Methods
 
-### 1. Chạy giám sát với Database
+### 🌐 Method 1: Web Dashboard (Recommended) ⭐
 
 ```bash
-# Sử dụng Makefile
+# Start data collection + web dashboard
+make run-monitor-db  # Terminal 1
+make run-web         # Terminal 2
+
+# Access: http://localhost:8000
+# Features: Real-time monitoring, export, system management
+```
+
+**Web Dashboard provides:**
+- 📊 **Live monitoring** với interactive charts
+- 📁 **Advanced export** với filtering options  
+- ⚙️ **System management** với health monitoring
+- 📱 **Mobile-ready** API và responsive UI
+
+### 🖥️ Method 2: GUI Tool (Desktop)
+
+```bash
+# Interactive database management
+make db-gui
+```
+
+**GUI Tool features:**
+- 📋 **Menu-driven interface** không cần commands
+- 📊 **Database statistics** và sensor summary
+- 📁 **Export functionality** với overwrite options  
+- 🔍 **Advanced queries** và cleanup tools
+
+### ⌨️ Method 3: Command Line (Automation)
+
+```bash
+# Database monitoring
 make run-monitor-db
 
-# Hoặc chạy trực tiếp
-python tools/read_ac_sensor_db.py
+# Statistics và management  
+make db-stats     # Database statistics
+make db-sensors   # Sensor information
+make db-latest    # Latest measurements
+make db-cleanup   # Data cleanup
 ```
 
-### 2. Xem thống kê Database
+### 📱 Method 4: API Access (Mobile Development)
 
 ```bash
-# Xem thống kê tổng quan
-make db-stats
+# RESTful API endpoints
+curl http://localhost:8000/api/measurements
+curl http://localhost:8000/api/sensors
+curl http://localhost:8000/api/stats
 
-# Xem thông tin sensors
-make db-sensors
-
-# Xem 20 measurements gần nhất
-make db-latest
-```
-
-### 3. Dọn dẹp dữ liệu cũ
-
-```bash
-# Xóa dữ liệu cũ hơn 30 ngày
-make db-cleanup
-
-# Hoặc chỉ định số ngày
-python tools/query_database.py --cleanup 60
+# WebSocket real-time updates  
+ws://localhost:8000/ws/realtime
 ```
 
 ## 🔧 Tool Truy vấn Database
@@ -209,17 +232,22 @@ python tools/query_database.py --cleanup 30
 python tools/query_database.py --cleanup 60
 ```
 
-## 📊 So sánh CSV vs Database
+## 📊 Storage Method Comparison
 
-| Tính năng | CSV | Database |
-|-----------|-----|----------|
-| **Hiệu suất** | Chậm với file lớn | Nhanh với indexes |
-| **Truy vấn** | Không hỗ trợ | SQL queries mạnh mẽ |
-| **Quản lý** | Phân mảnh | Tự động tối ưu |
-| **Backup** | Nhiều file | 1 file duy nhất |
-| **Thống kê** | Không có | Chi tiết |
-| **Dọn dẹp** | Thủ công | Tự động |
-| **Độ phức tạp** | Đơn giản | Phức tạp hơn |
+| Feature | CSV Files | SQLite Database | Web Dashboard |
+|---------|-----------|-----------------|---------------|
+| **Performance** | Slow with large files | Fast with indexes | Real-time optimized |
+| **User Interface** | None | CLI/GUI tools | Modern web UI |
+| **Remote Access** | Manual copy | File sharing | HTTP access |
+| **Real-time** | No | No | ✅ WebSocket |
+| **Mobile Support** | No | No | ✅ API + responsive |
+| **Backup** | Multiple files | Single file | Single file |
+| **Maintenance** | Manual | Semi-automatic | Fully automatic |
+| **Collaboration** | File sharing | File sharing | ✅ Multi-user web |
+| **Analytics** | External tools | Built-in stats | ✅ Interactive charts |
+| **Export** | Native format | Multiple formats | ✅ Advanced filtering |
+
+**Recommendation**: Use **Web Dashboard** cho production, **Database tools** cho automation, **CSV** cho legacy compatibility.
 
 ## 🔄 Chuyển đổi từ CSV sang Database
 
