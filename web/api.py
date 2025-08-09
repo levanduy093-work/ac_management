@@ -461,6 +461,79 @@ async def health_check():
             }
         )
 
+@app.get("/api/sensors/connectivity")
+async def check_sensors_connectivity():
+    """Check real-time connectivity of all known sensors"""
+    try:
+        import serial
+        from serial.tools import list_ports
+        import sys
+        import os
+        
+        # Add src directory to path to import PZEM004T
+        sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+        from pzem import PZEM004T
+        
+        # Get all known sensors from database
+        sensors = database.get_sensor_summary()
+        
+        # Get list of available serial ports
+        available_ports = [port.device for port in list_ports.comports()]
+        
+        connectivity_status = []
+        
+        for sensor in sensors:
+            port = sensor['port']
+            status = {
+                'port': port,
+                'device_address': sensor['device_address'],
+                'physically_connected': port in available_ports,
+                'can_communicate': False,
+                'last_measurement': sensor['last_measurement'],
+                'error': None
+            }
+            
+            # Only test communication if port is physically available
+            if status['physically_connected']:
+                try:
+                    # Try to connect and read data
+                    pzem = PZEM004T(port, sensor['device_address'], timeout=2.0)
+                    measurements = pzem.read_measurements()
+                    if measurements:
+                        status['can_communicate'] = True
+                    pzem.close()
+                except Exception as e:
+                    status['error'] = str(e)
+                    status['can_communicate'] = False
+            
+            # Determine overall online status
+            time_threshold = 60000  # 1 minute in milliseconds
+            last_measurement_time = None
+            if sensor['last_measurement']:
+                try:
+                    from datetime import datetime
+                    last_measurement_time = datetime.fromisoformat(sensor['last_measurement'].replace('Z', '+00:00'))
+                    time_since_last = (datetime.now() - last_measurement_time).total_seconds() * 1000
+                    recent_data = time_since_last < time_threshold
+                except:
+                    recent_data = False
+            else:
+                recent_data = False
+            
+            status['is_online'] = status['physically_connected'] and status['can_communicate']
+            status['has_recent_data'] = recent_data
+            
+            connectivity_status.append(status)
+        
+        return {
+            "success": True,
+            "data": connectivity_status,
+            "available_ports": available_ports,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import asyncio
     

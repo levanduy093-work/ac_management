@@ -523,11 +523,17 @@
         
         async function refreshSensors() {
             try {
-                const response = await fetch('/api/sensors');
-                const result = await response.json();
+                // First get basic sensor info
+                const sensorsResponse = await fetch('/api/sensors');
+                const sensorsData = await sensorsResponse.json();
                 
-                if (result.success) {
-                    const sensors = result.data;
+                // Then get real-time connectivity status
+                const connectivityResponse = await fetch('/api/sensors/connectivity');
+                const connectivityData = await connectivityResponse.json();
+                
+                if (sensorsData.success && connectivityData.success) {
+                    const sensors = sensorsData.data;
+                    const connectivity = connectivityData.data;
                     const container = document.getElementById('sensors-container');
                     
                     if (sensors.length === 0) {
@@ -542,9 +548,34 @@
                     
                     let html = '';
                     sensors.forEach(sensor => {
-                        // Use last_measurement instead of last_seen for online status
+                        // Find connectivity status for this sensor
+                        const connStatus = connectivity.find(c => c.port === sensor.port) || {};
+                        
+                        // Determine online status based on physical connection and communication
+                        const isOnline = connStatus.is_online || false;
+                        const physicallyConnected = connStatus.physically_connected || false;
+                        const canCommunicate = connStatus.can_communicate || false;
+                        
+                        // Status badge with more detailed info
+                        let statusBadge = '';
+                        let statusIcon = '';
+                        let statusText = '';
+                        
+                        if (isOnline) {
+                            statusBadge = 'bg-success';
+                            statusIcon = 'check-circle';
+                            statusText = 'Online';
+                        } else if (physicallyConnected && !canCommunicate) {
+                            statusBadge = 'bg-warning';
+                            statusIcon = 'exclamation-triangle';
+                            statusText = 'Lỗi kết nối';
+                        } else {
+                            statusBadge = 'bg-danger';
+                            statusIcon = 'x-circle';
+                            statusText = 'Offline';
+                        }
+                        
                         const lastMeasurement = sensor.last_measurement ? new Date(sensor.last_measurement) : new Date(sensor.last_seen);
-                        const isOnline = (Date.now() - lastMeasurement.getTime()) < 600000; // 10 minutes
                         
                         html += `
                             <div class="sensor-card">
@@ -556,13 +587,20 @@
                                         <small class="text-muted">Address: 0x${sensor.device_address.toString(16).toUpperCase()}</small>
                                     </div>
                                     <div class="col-md-2">
-                                        <span class="badge ${isOnline ? 'bg-success' : 'bg-danger'}">
-                                            <i class="bi bi-${isOnline ? 'check-circle' : 'x-circle'}"></i>
-                                            ${isOnline ? 'Online' : 'Offline'}
+                                        <span class="badge ${statusBadge}">
+                                            <i class="bi bi-${statusIcon}"></i>
+                                            ${statusText}
                                         </span>
+                                        ${connStatus.error ? `<br><small class="text-danger" title="${connStatus.error}">Lỗi kết nối</small>` : ''}
                                     </div>
                                     <div class="col-md-3">
-                                        <small class="text-muted">Lần cuối: ${lastMeasurement.toLocaleString('vi-VN')}</small>
+                                        <small class="text-muted">
+                                            Lần cuối: ${lastMeasurement.toLocaleString('vi-VN')}<br>
+                                            <span class="${physicallyConnected ? 'text-success' : 'text-danger'}">
+                                                <i class="bi bi-${physicallyConnected ? 'usb-symbol' : 'usb-symbol-slash'}"></i>
+                                                ${physicallyConnected ? 'USB đã cắm' : 'USB chưa cắm'}
+                                            </span>
+                                        </small>
                                     </div>
                                     <div class="col-md-2">
                                         <small class="text-muted">${sensor.total_measurements.toLocaleString()} readings</small>
@@ -570,6 +608,10 @@
                                     <div class="col-md-2">
                                         <button class="btn btn-sm btn-outline-primary" onclick="viewSensorDetails('${sensor.port}')">
                                             <i class="bi bi-eye"></i> Chi tiết
+                                        </button>
+                                        <br>
+                                        <button class="btn btn-sm btn-outline-secondary mt-1" onclick="testSensorConnection('${sensor.port}')">
+                                            <i class="bi bi-arrow-clockwise"></i> Test
                                         </button>
                                     </div>
                                 </div>
@@ -675,6 +717,37 @@
             
             currentAction = action;
             showConfirmation(message, executeAction);
+        }
+        
+        async function testSensorConnection(port) {
+            try {
+                showStatus('info', `Đang kiểm tra kết nối ${port}...`);
+                const response = await fetch('/api/sensors/connectivity');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const sensorStatus = result.data.find(s => s.port === port);
+                    if (sensorStatus) {
+                        if (sensorStatus.is_online) {
+                            showStatus('success', `✅ ${port}: Kết nối OK, có thể giao tiếp bình thường`);
+                        } else if (sensorStatus.physically_connected && !sensorStatus.can_communicate) {
+                            showStatus('warning', `⚠️ ${port}: USB đã cắm nhưng không thể giao tiếp. Lỗi: ${sensorStatus.error || 'Không rõ'}`);
+                        } else {
+                            showStatus('danger', `❌ ${port}: USB chưa được cắm hoặc không phát hiện được`);
+                        }
+                    } else {
+                        showStatus('warning', `❓ ${port}: Không tìm thấy thông tin kết nối`);
+                    }
+                    
+                    // Refresh sensor list to update status
+                    await refreshSensors();
+                } else {
+                    showStatus('danger', 'Không thể kiểm tra kết nối cảm biến');
+                }
+            } catch (error) {
+                console.error('Test connection error:', error);
+                showStatus('danger', `Lỗi khi kiểm tra kết nối ${port}: ${error.message}`);
+            }
         }
         
         async function executeAction() {
