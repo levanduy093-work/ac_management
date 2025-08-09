@@ -13,10 +13,10 @@
   - Average voltage monitoring
   - Active sensor count với connectivity status
 - 📊 **Interactive Charts** (Chart.js powered):
-  - Power consumption timeline với zoom/pan
-  - Voltage & Current monitoring graphs  
-  - Real-time updates every 5 seconds
-  - Time series optimization cho performance
+  - Power timeline & Voltage/Current
+  - Realtime 5 giây, giữ đúng ngữ cảnh cả ngày sau khi lọc
+  - Tùy chọn làm mượt (moving average) + LTTB decimation
+  - Time series optimization
 - 🔍 **Advanced Filtering**:
   - Date range picker với preset options
   - Individual sensor selection
@@ -36,7 +36,7 @@
   - Date range selection với calendar picker
   - Multi-sensor selection
   - Record limit controls  
-  - Preview before download
+  - Preview trước khi tải, hiển thị tổng bản ghi chính xác
 - 🚀 **Batch Operations**:
   - Export all sensors separately
   - Bulk download với progress tracking

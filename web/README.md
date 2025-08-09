@@ -1,98 +1,33 @@
-# 🌐 PZEM-004T Web Dashboard
+# 🌐 PZEM-004T Web Dashboard — Docs đã gộp
 
-Giao diện web hiện đại để giám sát và trực quan hóa dữ liệu từ cảm biến PZEM-004T.
+Tài liệu chi tiết của web dashboard đã được gộp vào `README.md` ở thư mục gốc để tránh trùng lặp. Dưới đây là mục lục rút gọn trỏ về các phần tương ứng trong README chính.
 
-## ✨ Tính năng
+## ✨ Mục lục rút gọn (xem README chính)
 
 ### 📊 Dashboard chính
-- **Real-time monitoring**: Hiển thị dữ liệu thời gian thực
-- **Interactive charts**: Biểu đồ tương tác với Chart.js
-- **Statistics cards**: Thống kê tổng quan (công suất, năng lượng, điện áp, số cảm biến)
-- **Data filtering**: Lọc dữ liệu theo ngày và cảm biến
-- **Responsive design**: Tương thích với mobile và desktop
+- Tính năng và giao diện: xem phần “🌐 Web Dashboard System” trong README
 
 ### 📁 Xuất dữ liệu
-- **Multiple formats**: Xuất CSV và JSON
-- **Advanced filtering**: Lọc theo thời gian, cảm biến, số bản ghi
-- **Preview function**: Xem trước dữ liệu trước khi xuất
-- **Batch export**: Xuất theo cảm biến riêng biệt
+- Hướng dẫn và preview: xem “📁 Export Center” trong README
 
 ### ⚙️ Quản lý hệ thống
-- **System health**: Kiểm tra trạng thái hệ thống
-- **Database stats**: Thống kê database chi tiết
-- **Sensor management**: Quản lý và giám sát cảm biến
-- **Data cleanup**: Dọn dẹp dữ liệu cũ tự động
-- **API information**: Thông tin API endpoints
+- Xem “⚙️ System Settings” trong README
 
 ### 🔗 REST API
-- **RESTful endpoints**: API hoàn chỉnh cho mobile app
-- **Real-time WebSocket**: Cập nhật dữ liệu real-time
-- **Comprehensive documentation**: Tài liệu API tự động với FastAPI
-- **CORS support**: Hỗ trợ cross-origin requests
+- Danh sách endpoint và WebSocket: xem “📱 Mobile Development Ready → API Ecosystem”
 
 ## 🚀 Cài đặt và chạy
 
-### 1. Cài đặt dependencies
-```bash
-pip install -r requirements.txt
-```
+### 1. Cài đặt nhanh
+Xem “🚀 Cài đặt và sử dụng” trong README (lệnh `pip install`, `make run-web`, `run_web.py`)
 
-### 2. Chạy web server
+### 2. Khởi chạy
+- `make run-web` hoặc `python run_web.py` — chi tiết xem README chính
 
-#### Cách 1: Sử dụng script startup (Khuyến nghị)
-```bash
-# Chạy với cài đặt mặc định
-python run_web.py
+### 3. Truy cập
+- Dashboard, Export, Settings, Docs: xem “Truy cập nhanh” trong README
 
-# Chạy với custom port
-python run_web.py --port 8080
-
-# Chạy với auto-reload (development)
-python run_web.py --reload
-
-# Chạy mà không kiểm tra database
-python run_web.py --skip-checks
-```
-
-#### Cách 2: Chạy trực tiếp với uvicorn
-```bash
-cd web/
-uvicorn api:app --host 0.0.0.0 --port 8000 --reload
-```
-
-#### Cách 3: Sử dụng Makefile (nếu có)
-```bash
-make run-web
-```
-
-### 3. Truy cập dashboard
-- **Dashboard**: http://localhost:8000
-- **API Documentation**: http://localhost:8000/docs
-- **Export Page**: http://localhost:8000/export  
-- **Settings**: http://localhost:8000/settings
-
-## 📡 API Endpoints
-
-### Dashboard & Stats
-- `GET /api/stats` - Database statistics
-- `GET /api/sensors` - Sensor summary
-- `GET /api/dashboard` - Complete dashboard data
-- `GET /api/health` - System health check
-
-### Measurements
-- `GET /api/measurements` - Latest measurements with pagination
-- `GET /api/measurements/range` - Measurements in date range
-- `GET /api/sensor/{id}/stats` - Individual sensor statistics
-
-### Export
-- `GET /api/export/csv` - Export data to CSV
-- `GET /api/export/json` - Export data to JSON
-
-### Management
-- `DELETE /api/cleanup` - Cleanup old data
-
-### Real-time
-- `WS /ws/realtime` - WebSocket for real-time updates
+## 📡 API Endpoints (xem README chính)
 
 ### Query Parameters
 
@@ -112,7 +47,7 @@ make run-web
 - `days`: Filter by last N days
 - `limit`: Limit number of records
 
-## 🏗️ Cấu trúc
+## 🏗️ Cấu trúc (tham chiếu)
 
 ```
 web/
@@ -122,19 +57,13 @@ web/
 │   ├── export.html     # Trang xuất dữ liệu
 │   └── settings.html   # Trang cài đặt
 ├── static/            # Static files (CSS, JS)
-└── README.md          # Tài liệu này
+└── README.md          # File định hướng (docs gộp ở README chính)
 ```
 
-## 🎨 Giao diện
+## 🎨 Giao diện (tóm tắt)
 
 ### Dashboard
-- **Modern UI**: Thiết kế hiện đại với Bootstrap 5
-- **Dark/Light theme**: Tự động theo system preference
-- **Interactive charts**: 
-  - Power consumption over time
-  - Voltage & Current monitoring
-  - Real-time updates every 5 seconds
-- **Data table**: Sortable, searchable measurement table
+- Bootstrap 5, responsive; biểu đồ realtime 5s, làm mượt, giữ ngữ cảnh cả ngày; bảng “Hiển thị thêm”
 
 ### Export Page
 - **Format selection**: CSV vs JSON with preview
@@ -148,7 +77,7 @@ web/
 - **Data maintenance**: Cleanup old data, backup functions
 - **Danger zone**: Advanced operations with confirmations
 
-## 🔧 Development
+## 🔧 Development (tham chiếu)
 
 ### Running in development mode
 ```bash
@@ -170,7 +99,7 @@ FastAPI tự động generate API documentation tại:
 - Static files (CSS, JS) trong `static/`
 - Bootstrap 5 và Chart.js đã được include
 
-## 📱 Mobile API
+## 📱 Mobile API (tham chiếu)
 
 API được thiết kế để hỗ trợ mobile applications:
 
@@ -199,7 +128,7 @@ Hiện tại chưa có authentication. Có thể thêm JWT hoặc API key authen
 ### Real-time updates
 WebSocket endpoint `/ws/realtime` cung cấp updates real-time cho mobile apps.
 
-## 🚨 Troubleshooting
+## 🚨 Troubleshooting (tham chiếu)
 
 ### Database not found
 ```bash
@@ -226,7 +155,7 @@ python run_web.py --port 8080
 pip install -r requirements.txt
 ```
 
-## 📈 Performance
+## 📈 Performance (tham chiếu)
 
 ### Optimization tips
 - Database indexes đã được tối ưu

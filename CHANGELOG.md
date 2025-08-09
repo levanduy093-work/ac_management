@@ -2,7 +2,7 @@
 
 Tất cả các thay đổi quan trọng trong dự án này sẽ được ghi lại trong file này.
 
-## [2.2.0] - 2025-01-15 (Current)
+## [2.2.0] - 2025-08-09 (Current)
 
 ### 🌐 Web Dashboard & Production Release
 
@@ -13,8 +13,8 @@ Tất cả các thay đổi quan trọng trong dự án này sẽ được ghi l
   - System management với health monitoring
   - Mobile-responsive design với Bootstrap 5
 - **🔗 Comprehensive REST API** cho mobile integration
-  - 15+ endpoints cho data access và management
-  - WebSocket real-time updates mỗi 5 giây
+  - REST endpoints + WebSocket (`/ws`, `/ws/realtime`)
+  - Realtime 5 giây, biểu đồ giữ ngữ cảnh cả ngày
   - Auto-generated documentation với Swagger UI
   - CORS support cho mobile development
 - **🚀 Production-Ready Deployment**
@@ -33,7 +33,7 @@ Tất cả các thay đổi quan trọng trong dự án này sẽ được ghi l
 - **API Documentation (`/docs`)**: Auto-generated Swagger UI
 
 #### 🔧 Enhanced Tools
-- **FastAPI server** (`web/api.py`) với 748 lines of production code
+- **FastAPI server** (`web/api.py`) REST + WebSocket
 - **Background tasks**: USB monitoring, connectivity checking
 - **Advanced export**: CSV/JSON với metadata và filtering
 - **System integration**: Web dashboard thay thế GUI tools hoàn toàn
@@ -45,12 +45,12 @@ Tất cả các thay đổi quan trọng trong dự án này sẽ được ghi l
 - **Dependencies**: 9 packages (fastapi, uvicorn, pyserial, websockets, etc.)
 - **Performance**: Real-time updates, optimized queries, background processing
 
-#### 🔄 Changed & Enhanced  
+#### 🔄 Changed & Enhanced
 - **Updated requirements.txt** (4 → 9 packages) với web dependencies
 - **Enhanced Makefile** (130 dòng) với web server commands
 - **Improved project structure** với web/ directory
 - **Updated documentation** với web dashboard guide (398 dòng)
-- **Modernized README** với web-first approach
+- **Updated docs** (README, WEB_DASHBOARD_GUIDE, web/README, PROJECT_STRUCTURE)
 
 #### 🚨 Breaking Changes
 - **Recommended workflow** changed: Web dashboard now primary interface

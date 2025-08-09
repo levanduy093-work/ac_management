@@ -13,13 +13,12 @@ PZEM-004T Hardware → Serial (Modbus-RTU) → Python Library → SQLite Databas
 
 ### 🌟 Điểm nổi bật chính
 
-- ✅ **🌐 Web Dashboard hiện đại** với real-time monitoring, interactive charts và mobile-ready UI
-- ✅ **🔗 REST API hoàn chỉnh** với 17+ endpoints cho mobile integration và auto-generated docs  
-- ✅ **💾 SQLite Database** với hiệu suất cao, auto-management và comprehensive analytics
-- ✅ **🔌 PZEM-004T Library hoàn chỉnh** theo datasheet chính thức với Modbus-RTU protocol
-- ✅ **🔧 Multi-sensor support** với concurrent monitoring và individual sensor selection
-- ✅ **🛡️ Safety-first tools** không làm hỏng cấu hình thiết bị
-- ✅ **📚 Comprehensive documentation** bằng tiếng Việt (3,000+ dòng docs)
+- ✅ **🌐 Web Dashboard hiện đại** với realtime, biểu đồ tương tác, responsive
+- ✅ **🔗 REST API đầy đủ** (kèm WebSocket) cho ứng dụng mobile và tích hợp
+- ✅ **💾 SQLite Database** tối ưu, kèm công cụ quản trị và export
+- ✅ **🔌 Thư viện PZEM-004T** theo datasheet chính thức (Modbus‑RTU)
+- ✅ **🔧 Hỗ trợ đa cảm biến**, lựa chọn cảm biến theo cổng
+- ✅ **🛡️ Safe tools** (reset năng lượng an toàn, không đổi địa chỉ)
 
 ### 📊 Thông số kỹ thuật giám sát
 
@@ -61,7 +60,7 @@ Hệ thống đọc và hiển thị các thông số điện quan trọng theo 
   - Individual sensor selection hoặc all sensors
   - Time range selection ("Tất cả thời gian" exports ALL data)
   - Smart filename generation với sensor port, timerange và timestamp
-- **👁️ Data Preview**: Live preview với sample data và statistics
+- **👁️ Data Preview**: Xem trước dữ liệu và thống kê chính xác tổng bản ghi
 - **🚀 Intelligent Export**: 
   - No time filter = Export ALL database data
   - With time filter = Export data trong khoảng đó
@@ -81,8 +80,8 @@ Hệ thống đọc và hiển thị các thông số điện quan trọng theo 
   - Auto-refresh statistics sau khi thực hiện operations
 
 ### 📱 API Documentation (`http://localhost:8000/docs`)
-- **🔗 17+ REST API endpoints** với Swagger UI
-- **🔄 WebSocket real-time** updates tại `ws://localhost:8000/ws`
+- **REST API** kèm Swagger UI
+- **WebSocket realtime** `ws://localhost:8000/ws` và `ws://localhost:8000/ws/realtime`
 - **📋 Comprehensive endpoints**:
   - `/api/dashboard` - Dashboard data với sensor filtering
   - `/api/measurements` - Measurements với pagination và filtering
@@ -91,37 +90,28 @@ Hệ thống đọc và hiển thị các thông số điện quan trọng theo 
   - `/api/database/stats` - Database statistics và health
   - `/api/cleanup`, `/api/database/reset` - Maintenance operations
 
-## 🗂️ Cấu trúc dự án (3,482 dòng code)
+## 🗂️ Cấu trúc dự án
 
 ```
 ac_management/
-├── src/                          # 📚 Core Libraries (1,074 dòng)
-│   ├── pzem.py                  # Complete PZEM-004T library (708 dòng)
-│   └── database.py              # SQLite database module (366 dòng)
-├── web/                          # 🌐 Web Dashboard System (843+ dòng)
-│   ├── api.py                   # FastAPI server với 17+ endpoints (843 dòng)
-│   ├── templates/               # HTML Templates
-│   │   ├── dashboard.html       # Real-time monitoring interface
-│   │   ├── export.html          # Advanced export với filtering
-│   │   └── settings.html        # System management và analytics
-│   └── static/                  # CSS, JS, assets
-├── tools/                        # 🔧 Application Tools (1,565 dòng)
-│   ├── read_ac_sensor_db.py     # Main monitoring tool (242 dòng)
-│   ├── database_gui.py          # Interactive GUI tool (617 dòng)
-│   ├── query_database.py        # Database query CLI tool (402 dòng)
-│   └── reset_energy_no_address_change.py # Safe energy reset (298 dòng)
-├── docs/                         # 📋 Documentation (3,000+ dòng)
-│   ├── PZEM004T.md              # Library API reference
-│   ├── DATABASE.md              # Database management guide
-│   └── DATA_LOGGING.md          # Data logging guide
-├── data/                         # 📊 Data Storage
-│   ├── pzem_data.db             # Main SQLite database
-│   ├── csv_logs/                # CSV export files
-│   └── json_log/                # JSON export files
-├── run_web.py                    # 🚀 Web server launcher với health checks
-├── Makefile                      # 🛠️ Project automation (25+ commands)
-├── requirements.txt              # 📦 Dependencies (9 packages)
-└── README.md                     # 📖 Main documentation
+├── src/                       # Core libraries
+│   ├── pzem.py               # PZEM-004T library (Modbus‑RTU)
+│   └── database.py           # SQLite database helper
+├── web/                       # Web dashboard (FastAPI)
+│   ├── api.py                # REST + WebSocket server
+│   ├── templates/            # dashboard.html, export.html, settings.html
+│   └── static/               # CSS/JS
+├── tools/                     # CLI/GUI utilities
+│   ├── read_ac_sensor_db.py
+│   ├── database_gui.py
+│   ├── query_database.py
+│   └── reset_energy_no_address_change.py
+├── docs/                      # Additional documentation
+├── data/
+│   └── pzem_data.db          # SQLite database
+├── run_web.py                 # Launcher script
+├── Makefile                   # Common commands
+└── requirements.txt          # Dependencies
 ```
 
 ## 🚀 Cài đặt và sử dụng
@@ -161,14 +151,14 @@ python tools/read_ac_sensor_db.py
 python run_web.py
 ```
 
-### Truy cập các tính năng
-- **🎯 Dashboard**: http://localhost:8000 - Real-time monitoring với charts
-- **📁 Export Data**: http://localhost:8000/export - Advanced export với filtering
-- **⚙️ Settings**: http://localhost:8000/settings - System management
-- **📋 API Docs**: http://localhost:8000/docs - Swagger UI cho mobile development
-- **🔄 WebSocket**: ws://localhost:8000/ws - Real-time updates
+### Truy cập nhanh
+- **Dashboard**: http://localhost:8000
+- **Export**: http://localhost:8000/export
+- **Settings**: http://localhost:8000/settings
+- **API Docs**: http://localhost:8000/docs
+- **WebSocket**: ws://localhost:8000/ws hoặc ws://localhost:8000/ws/realtime
 
-## 💾 Database Management
+## 💾 Database
 
 ### Current Database Schema
 ```sql
@@ -193,22 +183,13 @@ CREATE TABLE measurements (
 );
 ```
 
-### Quick Database Operations
+### Lệnh nhanh
 ```bash
-# Database statistics
-make db-stats
-
-# Interactive GUI management
-make db-gui
-
-# View sensors
-make db-sensors
-
-# View latest measurements
-make db-latest
-
-# Cleanup old data
-make db-cleanup
+make db-stats     # Thống kê
+make db-gui       # GUI quản trị
+make db-sensors   # Danh sách cảm biến
+make db-latest    # Bản ghi mới nhất
+make db-cleanup   # Dọn dữ liệu cũ
 ```
 
 ## 🔧 Standalone Tools
@@ -233,7 +214,7 @@ python tools/reset_energy_no_address_change.py --all          # Reset tất cả
 python tools/reset_energy_no_address_change.py --port /dev/ttyUSB0  # Reset specific
 ```
 
-**💡 Lưu ý quan trọng**: Tool này **KHÔNG thay đổi địa chỉ** PZEM, giữ nguyên 0xF8 để tránh conflicts.
+**Lưu ý**: Tool này **KHÔNG thay đổi địa chỉ** PZEM, giữ nguyên 0xF8 để tránh xung đột.
 
 ### 📊 Database Query Tools
 ```bash
@@ -251,7 +232,9 @@ python tools/database_gui.py
 ### 🌐 Web Dashboard System
 - ✅ **Modern responsive UI** với Bootstrap 5 và mobile compatibility
 - ✅ **Real-time monitoring** với WebSocket updates mỗi 5 giây
-- ✅ **Interactive charts** sử dụng Chart.js với zoom/pan
+- ✅ **Interactive charts** (Chart.js) + tuỳ chọn làm mượt (moving average) + LTTB decimation
+- ✅ **Giữ ngữ cảnh cả ngày khi realtime**: biểu đồ luôn bám theo ngày đã lọc
+- ✅ **Bảng dữ liệu**: mặc định 6 dòng, nút “Hiển thị thêm” (+6 mỗi lần)
 - ✅ **Individual sensor selection** trong dashboard và export
 - ✅ **Advanced export system** với multiple formats và filtering
 - ✅ **System health monitoring** với database analytics
@@ -288,11 +271,14 @@ python tools/database_gui.py
 http://localhost:8000/api/
 
 # Key endpoints
-GET /api/dashboard?port=/dev/ttyUSB1          # Dashboard data
-GET /api/measurements?limit=50&port=...       # Measurements với filtering  
-GET /api/sensors                              # Sensor list và status
-GET /api/export/csv?port=...                 # Export functionality
-WebSocket ws://localhost:8000/ws              # Real-time updates
+GET /api/dashboard?port=/dev/ttyUSB1                 # Dashboard data
+GET /api/measurements?limit=50&port=...              # Measurements/filtering  
+GET /api/measurements/range?start_date=...&end_date=...  # Theo ngày
+GET /api/sensors                                     # Sensor list & status
+GET /api/export/csv|json                              # Export
+DELETE /api/cleanup                                   # Dọn dữ liệu
+DELETE /api/database/reset?deep=false                 # Reset database
+WS   /ws, /ws/realtime                                # Real-time
 ```
 
 ### Features cho Mobile Development

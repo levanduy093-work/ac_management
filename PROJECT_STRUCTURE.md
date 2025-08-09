@@ -10,10 +10,10 @@ AC Management là **hệ thống giám sát điện năng PZEM-004T hoàn chỉn
 ac_management/
 ├── src/                       # 📚 Core Libraries
 │   ├── __init__.py           # Package initialization
-│   ├── pzem.py               # Complete PZEM-004T library (709 dòng)
-│   └── database.py           # SQLite database module (367 dòng)
+│   ├── pzem.py               # PZEM-004T library (Modbus‑RTU)
+│   └── database.py           # SQLite database module
 ├── web/                       # 🌐 Web Dashboard System
-│   ├── api.py                # FastAPI server (748 dòng)
+│   ├── api.py                # FastAPI server (REST + WebSocket)
 │   ├── static/               # CSS, JS, assets
 │   ├── templates/            # HTML templates
 │   │   ├── dashboard.html    # Main dashboard
@@ -26,7 +26,7 @@ ac_management/
 │   ├── database_gui.py       # Interactive GUI tool (618 dòng)
 │   ├── query_database.py     # Database query tool (403 dòng)
 │   ├── reset_energy_no_address_change.py # Safe energy reset (299 dòng)
-│   └── read_ac_sensor.py     # Legacy CSV monitoring (362 dòng)
+│   └── read_ac_sensor.py     # Legacy CSV monitoring (compatible)
 ├── docs/                      # 📋 Documentation
 │   ├── PZEM004T.md           # Library API reference (572 dòng)
 │   ├── DATABASE.md           # Database guide (389 dòng)
@@ -66,7 +66,7 @@ ac_management/
 
 ### 🌐 Web Dashboard System (`web/`) - NEW ⭐
 
-#### `web/api.py` (748 dòng) - FastAPI Server
+#### `web/api.py` - FastAPI Server
 - **Modern REST API** với FastAPI framework
 - **Real-time WebSocket** cho live updates
 - **Comprehensive endpoints**: 
@@ -92,7 +92,7 @@ ac_management/
 
 ### 🔧 Application Tools (`tools/`)
 
-#### `tools/read_ac_sensor_db.py` (243 dòng) - Main Monitoring ⭐
+#### `tools/read_ac_sensor_db.py` - Main Monitoring ⭐
 - **Primary monitoring tool** cho database storage
 - **Multi-sensor concurrent reading** với threading
 - **Auto-discovery**: Tìm và kết nối PZEM-004T tự động
@@ -101,7 +101,7 @@ ac_management/
 - **Error resilience**: Retry mechanism, timeout handling
 - **Adapter support**: PL2303, CH340, CP210, FTDI
 
-#### `tools/database_gui.py` (618 dòng) - GUI Management ⭐
+#### `tools/database_gui.py` - GUI Management ⭐
 - **Interactive GUI tool** cho database management
 - **Menu-driven interface**: Không cần nhớ commands
 - **Complete functionality**:
@@ -111,7 +111,7 @@ ac_management/
   - Cleanup old data với confirmation
 - **User-friendly**: Perfect cho non-technical users
 
-#### `tools/query_database.py` (403 dòng) - CLI Power Tool
+#### `tools/query_database.py` - CLI Power Tool
 - **Command-line database interface** cho advanced users
 - **Flexible export options**:
   - Single file export hoặc separate by port
@@ -121,7 +121,7 @@ ac_management/
 - **Statistics display**: Database stats, sensor summary
 - **Cleanup functions**: Automated old data removal
 
-#### `tools/reset_energy_no_address_change.py` (299 dòng) - Safety Tool ⭐
+#### `tools/reset_energy_no_address_change.py` - Safety Tool ⭐
 - **SAFE energy reset tool** - KHÔNG thay đổi địa chỉ thiết bị
 - **Sequential reset**: Tránh conflicts khi có nhiều devices
 - **Smart timeout**: Retry mechanism với conflict detection  

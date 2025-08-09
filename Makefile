@@ -79,10 +79,6 @@ docs:
 	@echo "- docs/DATA_LOGGING.md: Data logging guide"
 	@echo "- README.md: Main documentation"
 
-# Run the multi-sensor monitor (CSV storage)
-run-monitor:
-	python tools/read_ac_sensor.py
-
 # Run the multi-sensor monitor (Database storage)
 run-monitor-db:
 	python tools/read_ac_sensor_db.py
