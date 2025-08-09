@@ -7,6 +7,7 @@ Provides REST API endpoints and web dashboard for data visualization
 import sys
 import os
 import asyncio
+import sqlite3
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
 import json
@@ -640,6 +641,65 @@ async def monitor_usb_ports():
         
         # Check every 2 seconds
         await asyncio.sleep(2)
+
+@app.delete("/api/measurements")
+async def delete_all_measurements():
+    """Delete all measurements but keep sensor records"""
+    try:
+        with sqlite3.connect(database.db_path) as conn:
+            cursor = conn.cursor()
+            
+            # Count measurements before deletion
+            cursor.execute('SELECT COUNT(*) FROM measurements')
+            count_before = cursor.fetchone()[0]
+            
+            # Delete all measurements
+            cursor.execute('DELETE FROM measurements')
+            
+            # Reset total_readings in sensors table
+            cursor.execute('UPDATE sensors SET total_readings = 0')
+            
+            conn.commit()
+            
+        return {
+            "success": True,
+            "message": f"Đã xóa {count_before} measurements",
+            "deleted_count": count_before
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi khi xóa measurements: {str(e)}")
+
+@app.delete("/api/database/reset")
+async def reset_database():
+    """Reset entire database - delete all data"""
+    try:
+        with sqlite3.connect(database.db_path) as conn:
+            cursor = conn.cursor()
+            
+            # Count data before deletion
+            cursor.execute('SELECT COUNT(*) FROM measurements')
+            measurement_count = cursor.fetchone()[0]
+            
+            cursor.execute('SELECT COUNT(*) FROM sensors')
+            sensor_count = cursor.fetchone()[0]
+            
+            # Delete all data
+            cursor.execute('DELETE FROM measurements')
+            cursor.execute('DELETE FROM sensors')
+            
+            # Reset autoincrement counters
+            cursor.execute('DELETE FROM sqlite_sequence WHERE name IN ("measurements", "sensors")')
+            
+            conn.commit()
+            
+        return {
+            "success": True,
+            "message": f"Đã xóa toàn bộ database: {measurement_count} measurements và {sensor_count} sensors",
+            "deleted_measurements": measurement_count,
+            "deleted_sensors": sensor_count
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi khi reset database: {str(e)}")
 
 @app.on_event("startup")
 async def startup_event():

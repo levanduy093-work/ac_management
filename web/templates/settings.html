@@ -928,20 +928,45 @@
             try {
                 showLoading(true);
                 
-                // Since we don't have actual endpoints for these dangerous operations,
-                // we'll simulate them for the UI demo
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                let response, result;
                 
                 switch (currentAction) {
                     case 'clear-measurements':
-                        showStatus('success', 'Đã xóa tất cả measurements (DEMO - không thực hiện)');
+                        response = await fetch('/api/measurements', {
+                            method: 'DELETE'
+                        });
+                        result = await response.json();
+                        
+                        if (result.success) {
+                            showStatus('success', `✅ ${result.message}`);
+                        } else {
+                            showStatus('danger', `❌ Lỗi: ${result.detail || 'Không xóa được measurements'}`);
+                        }
                         break;
+                        
                     case 'reset-database':
-                        showStatus('success', 'Đã reset database (DEMO - không thực hiện)');
+                        response = await fetch('/api/database/reset', {
+                            method: 'DELETE'
+                        });
+                        result = await response.json();
+                        
+                        if (result.success) {
+                            showStatus('success', `✅ ${result.message}`);
+                        } else {
+                            showStatus('danger', `❌ Lỗi: ${result.detail || 'Không reset được database'}`);
+                        }
                         break;
+                        
+                    default:
+                        showStatus('warning', 'Chức năng chưa được hỗ trợ');
+                        return;
                 }
                 
-                await refreshDatabaseStats();
+                // Refresh all data after deletion
+                await Promise.all([
+                    refreshDatabaseStats(),
+                    refreshSensors()
+                ]);
                 
             } catch (error) {
                 console.error('Action error:', error);
