@@ -273,7 +273,11 @@
         </div>
 
         <!-- Charts Controls -->
-        <div class="d-flex justify-content-end mb-2">
+        <div class="d-flex justify-content-end align-items-center gap-3 mb-2">
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="smooth-switch" checked>
+                <label class="form-check-label" for="smooth-switch">Làm mượt</label>
+            </div>
             <div class="form-check form-switch">
                 <input class="form-check-input" type="checkbox" id="full-day-switch">
                 <label class="form-check-label" for="full-day-switch">Hiển thị đủ 24h</label>
@@ -366,6 +370,8 @@
         let currentLimit = 6;
         let isFullDayView = false;
         let lastRawChartData = [];
+        let isSmoothingEnabled = true;
+        let smoothingWindowPoints = 5; // moving average window (points)
         let ws = null;
         let reconnectInterval = null;
         
@@ -439,6 +445,13 @@
             if (fullDaySwitch) {
                 fullDaySwitch.addEventListener('change', (e) => {
                     isFullDayView = e.target.checked;
+                    updateCharts(lastRawChartData);
+                });
+            }
+            const smoothSwitch = document.getElementById('smooth-switch');
+            if (smoothSwitch) {
+                smoothSwitch.addEventListener('change', (e) => {
+                    isSmoothingEnabled = e.target.checked;
                     updateCharts(lastRawChartData);
                 });
             }
@@ -547,7 +560,7 @@
                 result.data.forEach(sensor => {
                     const option = document.createElement('option');
                     option.value = sensor.port;
-                    option.textContent = `${sensor.port} (${sensor.device_address})`;
+                    option.textContent = `${sensor.port}`;
                     sensorSelect.appendChild(option);
                 });
                 
@@ -736,7 +749,7 @@
                         legend: {
                             display: true
                         },
-                        decimation: { enabled: true, algorithm: 'min-max' }
+                        decimation: { enabled: true, algorithm: 'lttb', samples: 300 }
                     }
                 }
             });
@@ -805,10 +818,26 @@
                         legend: {
                             display: true
                         },
-                        decimation: { enabled: true, algorithm: 'min-max' }
+                        decimation: { enabled: true, algorithm: 'lttb', samples: 300 }
                     }
                 }
             });
+        }
+
+        function smoothSeries(points, windowSize) {
+            if (!isSmoothingEnabled || windowSize <= 1 || points.length <= 2) return points;
+            const result = [];
+            let acc = 0;
+            const queue = [];
+            for (let i = 0; i < points.length; i++) {
+                const y = Number(points[i].y) || 0;
+                queue.push(y);
+                acc += y;
+                if (queue.length > windowSize) acc -= queue.shift();
+                const avg = acc / queue.length;
+                result.push({ x: points[i].x, y: avg });
+            }
+            return result;
         }
         
         function getSelectedDateRangeBounds() {
@@ -839,9 +868,14 @@
             }));
 
             // Build chart points
-            const powerPoints = prepared.map(d => ({ x: new Date(d.timestamp), y: d.power }));
-            const voltagePoints = prepared.map(d => ({ x: new Date(d.timestamp), y: d.voltage }));
-            const currentPoints = prepared.map(d => ({ x: new Date(d.timestamp), y: d.current }));
+            let powerPoints = prepared.map(d => ({ x: new Date(d.timestamp), y: d.power }));
+            let voltagePoints = prepared.map(d => ({ x: new Date(d.timestamp), y: d.voltage }));
+            let currentPoints = prepared.map(d => ({ x: new Date(d.timestamp), y: d.current }));
+
+            // Apply moving-average smoothing if enabled
+            powerPoints = smoothSeries(powerPoints, smoothingWindowPoints);
+            voltagePoints = smoothSeries(voltagePoints, smoothingWindowPoints);
+            currentPoints = smoothSeries(currentPoints, smoothingWindowPoints);
 
             powerChart.data.datasets[0].data = powerPoints;
             voltageCurrentChart.data.datasets[0].data = voltagePoints;
