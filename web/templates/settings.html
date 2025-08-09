@@ -395,9 +395,181 @@
     
     <script>
         let currentAction = null;
+        let ws = null;
+        let reconnectInterval = null;
+        
+        // WebSocket connection for real-time updates
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws`;
+            
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = function(event) {
+                console.log('WebSocket connected');
+                showStatus('success', '🔄 Kết nối real-time thành công!');
+                
+                // Clear any reconnection attempts
+                if (reconnectInterval) {
+                    clearInterval(reconnectInterval);
+                    reconnectInterval = null;
+                }
+            };
+            
+            ws.onmessage = function(event) {
+                try {
+                    const message = JSON.parse(event.data);
+                    handleWebSocketMessage(message);
+                } catch (error) {
+                    console.error('Error parsing WebSocket message:', error);
+                }
+            };
+            
+            ws.onclose = function(event) {
+                console.log('WebSocket disconnected');
+                showStatus('warning', '⚠️ Mất kết nối real-time, đang thử kết nối lại...');
+                
+                // Try to reconnect every 5 seconds
+                if (!reconnectInterval) {
+                    reconnectInterval = setInterval(() => {
+                        if (ws.readyState === WebSocket.CLOSED) {
+                            connectWebSocket();
+                        }
+                    }, 5000);
+                }
+            };
+            
+            ws.onerror = function(error) {
+                console.error('WebSocket error:', error);
+            };
+        }
+        
+        function handleWebSocketMessage(message) {
+            switch (message.type) {
+                case 'usb_status_change':
+                    showStatus('info', `🔌 ${message.port}: ${message.connected ? 'USB đã cắm' : 'USB đã rút'}`);
+                    // Refresh sensor list to show updated status
+                    setTimeout(refreshSensors, 500);
+                    break;
+                    
+                case 'connectivity_update':
+                    console.log('Connectivity update received:', message.data);
+                    updateSensorStatus(message.data);
+                    break;
+                    
+                default:
+                    console.log('Unknown message type:', message.type);
+            }
+        }
+        
+        function updateSensorStatus(connectivityData) {
+            // Update the sensor display with new connectivity data
+            const container = document.getElementById('sensors-container');
+            if (!container) return;
+            
+            // Get current sensors from API to have full data
+            fetch('/api/sensors')
+                .then(response => response.json())
+                .then(sensorsData => {
+                    if (sensorsData.success) {
+                        const sensors = sensorsData.data;
+                        const connectivity = connectivityData;
+                        
+                        if (sensors.length === 0) {
+                            container.innerHTML = `
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle"></i>
+                                    Chưa có cảm biến nào được phát hiện. Hãy chạy script monitor để thu thập dữ liệu.
+                                </div>
+                            `;
+                            return;
+                        }
+                        
+                        let html = '';
+                        sensors.forEach(sensor => {
+                            // Find connectivity status for this sensor
+                            const connStatus = connectivity.find(c => c.port === sensor.port) || {};
+                            
+                            // Determine online status based on physical connection and communication
+                            const isOnline = connStatus.is_online || false;
+                            const physicallyConnected = connStatus.physically_connected || false;
+                            const canCommunicate = connStatus.can_communicate || false;
+                            
+                            // Status badge with more detailed info
+                            let statusBadge = '';
+                            let statusIcon = '';
+                            let statusText = '';
+                            
+                            if (isOnline) {
+                                statusBadge = 'bg-success';
+                                statusIcon = 'check-circle';
+                                statusText = 'Online';
+                            } else if (physicallyConnected && !canCommunicate) {
+                                statusBadge = 'bg-warning';
+                                statusIcon = 'exclamation-triangle';
+                                statusText = 'Lỗi kết nối';
+                            } else {
+                                statusBadge = 'bg-danger';
+                                statusIcon = 'x-circle';
+                                statusText = 'Offline';
+                            }
+                            
+                            const lastMeasurement = sensor.last_measurement ? new Date(sensor.last_measurement) : new Date(sensor.last_seen);
+                            
+                            html += `
+                                <div class="sensor-card">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-3">
+                                            <h6 class="mb-1">
+                                                <i class="bi bi-cpu"></i> ${sensor.port}
+                                            </h6>
+                                            <small class="text-muted">Address: 0x${sensor.device_address.toString(16).toUpperCase()}</small>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <span class="badge ${statusBadge}">
+                                                <i class="bi bi-${statusIcon}"></i>
+                                                ${statusText}
+                                            </span>
+                                            ${connStatus.error ? `<br><small class="text-danger" title="${connStatus.error}">Lỗi kết nối</small>` : ''}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <small class="text-muted">
+                                                Lần cuối: ${lastMeasurement.toLocaleString('vi-VN')}<br>
+                                                <span class="${physicallyConnected ? 'text-success' : 'text-danger'}">
+                                                    <i class="bi bi-${physicallyConnected ? 'usb-symbol' : 'usb-symbol-slash'}"></i>
+                                                    ${physicallyConnected ? 'USB đã cắm' : 'USB chưa cắm'}
+                                                </span>
+                                            </small>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <small class="text-muted">${sensor.total_measurements.toLocaleString()} readings</small>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <button class="btn btn-sm btn-outline-primary" onclick="viewSensorDetails('${sensor.port}')">
+                                                <i class="bi bi-eye"></i> Chi tiết
+                                            </button>
+                                            <br>
+                                            <button class="btn btn-sm btn-outline-secondary mt-1" onclick="testSensorConnection('${sensor.port}')">
+                                                <i class="bi bi-arrow-clockwise"></i> Test
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        container.innerHTML = html;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error updating sensor status:', error);
+                });
+        }
         
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
+            // Connect WebSocket for real-time updates
+            connectWebSocket();
             initializeSettings();
             
             // Set API base URL
@@ -814,6 +986,16 @@
             // Scroll to top to show message
             window.scrollTo(0, 0);
         }
+        
+        // Clean up WebSocket when page is closed
+        window.addEventListener('beforeunload', function() {
+            if (ws) {
+                ws.close();
+            }
+            if (reconnectInterval) {
+                clearInterval(reconnectInterval);
+            }
+        });
     </script>
 </body>
 </html>

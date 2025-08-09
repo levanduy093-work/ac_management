@@ -355,9 +355,72 @@
         let realtimeInterval;
         let currentData = [];
         let currentLimit = 50;
+        let ws = null;
+        let reconnectInterval = null;
+        
+        // WebSocket connection for real-time updates
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws`;
+            
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = function(event) {
+                console.log('WebSocket connected to dashboard');
+            };
+            
+            ws.onmessage = function(event) {
+                try {
+                    const message = JSON.parse(event.data);
+                    handleWebSocketMessage(message);
+                } catch (error) {
+                    console.error('Error parsing WebSocket message:', error);
+                }
+            };
+            
+            ws.onclose = function(event) {
+                console.log('WebSocket disconnected from dashboard');
+                
+                // Try to reconnect every 5 seconds
+                if (!reconnectInterval) {
+                    reconnectInterval = setInterval(() => {
+                        if (ws.readyState === WebSocket.CLOSED) {
+                            connectWebSocket();
+                        }
+                    }, 5000);
+                }
+            };
+            
+            ws.onerror = function(error) {
+                console.error('WebSocket error:', error);
+            };
+        }
+        
+        function handleWebSocketMessage(message) {
+            switch (message.type) {
+                case 'usb_status_change':
+                    showStatus('info', `🔌 ${message.port}: ${message.connected ? 'USB đã cắm' : 'USB đã rút'}`, 3000);
+                    break;
+                    
+                case 'connectivity_update':
+                    // Update sensor count if needed
+                    updateSensorCount(message.data);
+                    break;
+                    
+                default:
+                    console.log('Unknown message type:', message.type);
+            }
+        }
+        
+        function updateSensorCount(connectivityData) {
+            const onlineCount = connectivityData.filter(sensor => sensor.is_online).length;
+            const totalCount = connectivityData.length;
+            document.getElementById('sensor-count').textContent = `${onlineCount}/${totalCount}`;
+        }
         
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {
+            connectWebSocket();
             initializeDashboard();
             initializeCharts();
             setDefaultDates();
@@ -731,7 +794,7 @@
             spinner.style.display = show ? 'block' : 'none';
         }
         
-        function showStatus(type, message) {
+        function showStatus(type, message, timeout = 5000) {
             const alert = document.getElementById('status-alert');
             alert.className = `alert alert-modern alert-${type}`;
             alert.innerHTML = `
@@ -740,16 +803,22 @@
             `;
             alert.classList.remove('d-none');
             
-            // Auto hide after 5 seconds
+            // Auto hide after specified timeout
             setTimeout(() => {
                 alert.classList.add('d-none');
-            }, 5000);
+            }, timeout);
         }
         
         // Cleanup on page unload
         window.addEventListener('beforeunload', function() {
             if (realtimeInterval) {
                 clearInterval(realtimeInterval);
+            }
+            if (ws) {
+                ws.close();
+            }
+            if (reconnectInterval) {
+                clearInterval(reconnectInterval);
             }
         });
     </script>

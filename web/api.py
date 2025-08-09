@@ -73,6 +73,21 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
+# Global variable to store last known USB port status
+_last_usb_status = {}
+_monitoring_task = None
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    """WebSocket endpoint for real-time updates"""
+    await manager.connect(websocket)
+    try:
+        while True:
+            # Keep connection alive
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+
 # ===== WEB DASHBOARD ROUTES =====
 
 @app.get("/", response_class=HTMLResponse)
@@ -533,6 +548,115 @@ async def check_sensors_connectivity():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+async def monitor_usb_ports():
+    """Background task to monitor USB port changes"""
+    global _last_usb_status
+    
+    while True:
+        try:
+            import serial
+            from serial.tools import list_ports
+            import sys
+            import os
+            
+            # Get current USB ports
+            current_ports = [port.device for port in list_ports.comports() if 'USB' in port.device]
+            
+            # Get known sensors from database
+            sensors = database.get_sensor_summary()
+            known_ports = [sensor['port'] for sensor in sensors]
+            
+            # Check for changes
+            current_status = {}
+            changes_detected = False
+            
+            for port in known_ports:
+                is_connected = port in current_ports
+                current_status[port] = is_connected
+                
+                # Check if status changed
+                if port not in _last_usb_status or _last_usb_status[port] != is_connected:
+                    changes_detected = True
+                    
+                    # Broadcast change via WebSocket
+                    message = {
+                        "type": "usb_status_change",
+                        "port": port,
+                        "connected": is_connected,
+                        "timestamp": datetime.now().isoformat()
+                    }
+                    await manager.broadcast(json.dumps(message))
+            
+            # Update last known status
+            _last_usb_status = current_status
+            
+            if changes_detected:
+                # Also broadcast full connectivity status
+                try:
+                    connectivity_status = []
+                    for sensor in sensors:
+                        port = sensor['port']
+                        status = {
+                            'port': port,
+                            'device_address': sensor['device_address'],
+                            'physically_connected': port in current_ports,
+                            'can_communicate': False,
+                            'last_measurement': sensor['last_measurement'],
+                            'error': None
+                        }
+                        
+                        # Test communication if physically connected
+                        if status['physically_connected']:
+                            try:
+                                sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+                                from pzem import PZEM004T
+                                
+                                pzem = PZEM004T(port, sensor['device_address'], timeout=1.0)
+                                measurements = pzem.read_measurements()
+                                if measurements:
+                                    status['can_communicate'] = True
+                                pzem.close()
+                            except Exception as e:
+                                status['error'] = str(e)
+                                status['can_communicate'] = False
+                        
+                        status['is_online'] = status['physically_connected'] and status['can_communicate']
+                        connectivity_status.append(status)
+                    
+                    # Broadcast full update
+                    full_update = {
+                        "type": "connectivity_update",
+                        "data": connectivity_status,
+                        "timestamp": datetime.now().isoformat()
+                    }
+                    await manager.broadcast(json.dumps(full_update))
+                    
+                except Exception as e:
+                    print(f"Error in connectivity check: {e}")
+            
+        except Exception as e:
+            print(f"Error in USB monitoring: {e}")
+        
+        # Check every 2 seconds
+        await asyncio.sleep(2)
+
+@app.on_event("startup")
+async def startup_event():
+    """Start background tasks when the app starts"""
+    global _monitoring_task
+    _monitoring_task = asyncio.create_task(monitor_usb_ports())
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Clean up background tasks when the app shuts down"""
+    global _monitoring_task
+    if _monitoring_task:
+        _monitoring_task.cancel()
+        try:
+            await _monitoring_task
+        except asyncio.CancelledError:
+            pass
 
 if __name__ == "__main__":
     import asyncio
