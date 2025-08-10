@@ -85,7 +85,7 @@ def main():
     print(f"   Host: {args.host}")
     print(f"   Port: {args.port}")
     print(f"   Dashboard: http://{args.host}:{args.port}")
-    print(f"   API Docs: http://{args.host}:{args.port}/docs")
+    print(f"   API Docs: http://{args.host}:{args.port}/docs (may be disabled)")
     print(f"   Reload: {'Enabled' if args.reload else 'Disabled'}")
     print("\n💡 Press Ctrl+C to stop the server")
     print("=" * 50)

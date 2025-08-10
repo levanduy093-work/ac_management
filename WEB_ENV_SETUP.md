@@ -12,11 +12,12 @@ Steps:
    
    - `make run-web` (or `python run_web.py`)
 
-3. Clients must include the token on every request:
-   - Header: `X-API-Key: <token>`
-   - or Query string: `?api_key=<token>`
+3. New auth model (production-ready):
+   - Visit `/login` and enter your password (the value of `API_TOKEN`).
+   - The server sets a secure session cookie; all API calls use this session (no token in URLs or JS).
 
 Notes:
-- WebSocket endpoints also require the same token (header or query param).
-- If `API_TOKEN` is not set, the app uses a default token value from the code.
+- Docs (`/docs`) can be disabled in production via `DISABLE_DOCS=true`.
+- Cookies are HTTP-only; for Internet deployment behind HTTPS, set `COOKIE_SECURE=true`.
+- State-changing APIs require header `X-Requested-With: XMLHttpRequest` to mitigate CSRF.
 

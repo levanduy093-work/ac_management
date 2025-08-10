@@ -18,11 +18,13 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 # FastAPI imports
-from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect, Request
-from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
+from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect, Request, Depends, Form
+from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import uvicorn
+from itsdangerous import URLSafeSerializer, BadSignature
+from collections import deque
 
 # Add src directory to path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
@@ -41,10 +43,15 @@ except Exception:
     PZEM004T = None  # Will check at runtime
 
 # Initialize FastAPI app
+DISABLE_DOCS = os.environ.get("DISABLE_DOCS", "true").lower() in ("1", "true", "yes")
+
 app = FastAPI(
     title="PZEM-004T Monitoring API",
     description="REST API for PZEM-004T power monitoring data",
-    version="1.0.0"
+    version="1.0.0",
+    docs_url=None if DISABLE_DOCS else "/docs",
+    redoc_url=None if DISABLE_DOCS else "/redoc",
+    openapi_url=None if DISABLE_DOCS else "/openapi.json",
 )
 
 # Load environment variables from .env if present
@@ -66,25 +73,59 @@ templates = Jinja2Templates(directory=str(templates_dir))
 db_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'pzem_data.db')
 database = PZEMDatabase(db_path)
 
-# ===== Simple API protection (optional via env var) =====
-# Set environment variable API_TOKEN to enable protection.
-# When enabled, all requests to /api/* must include header 'X-API-Key: <token>'
-# or query parameter '?api_key=<token>'. Docs (/docs) remain public for discovery.
-API_TOKEN = os.environ.get("API_TOKEN", "@Levanduy093")
+# ===== Auth & security config =====
+API_TOKEN = os.environ.get("API_TOKEN")
+if not API_TOKEN:
+    raise RuntimeError("API_TOKEN must be set in .env for production deployment")
+
+SECRET_KEY = os.environ.get("SECRET_KEY", "change-me-secret")
+SESSION_COOKIE_NAME = os.environ.get("SESSION_COOKIE_NAME", "acm_session")
+serializer = URLSafeSerializer(SECRET_KEY, salt="acm-session")
+COOKIE_SECURE = os.environ.get("COOKIE_SECURE", "false").lower() in ("1", "true", "yes")
+
+# Simple in-memory rate limiter for login attempts
+_login_attempts: Dict[str, deque] = {}
+LOGIN_MAX_ATTEMPTS = int(os.environ.get("LOGIN_MAX_ATTEMPTS", "10"))
+LOGIN_WINDOW_SECONDS = int(os.environ.get("LOGIN_WINDOW_SECONDS", "300"))  # 5 minutes
+
+def create_session_token(username: str) -> str:
+    return serializer.dumps({"u": username, "t": int(time.time())})
+
+def verify_session_token(token: str) -> Optional[Dict[str, Any]]:
+    try:
+        return serializer.loads(token)
+    except BadSignature:
+        return None
 
 @app.middleware("http")
-async def api_token_middleware(request: Request, call_next):
+async def session_auth_middleware(request: Request, call_next):
     try:
-        if API_TOKEN and request.url.path.startswith("/api/"):
-            provided = request.headers.get("X-API-Key") or request.query_params.get("api_key")
-            if provided != API_TOKEN:
-                return JSONResponse(
-                    status_code=401,
-                    content={
-                        "success": False,
-                        "detail": "Unauthorized. Provide X-API-Key header or api_key query param.",
-                    },
-                )
+        path = request.url.path
+        if path.startswith("/static/"):
+            return await call_next(request)
+
+        # Login page and POST login are open
+        if path in ("/login", "/logout") or path == "/":
+            # Allow GET / to redirect if not logged-in; data API still protected below
+            pass
+
+        # Protect all /api/* endpoints with session cookie
+        if path.startswith("/api/"):
+            session_cookie = request.cookies.get(SESSION_COOKIE_NAME)
+            session = verify_session_token(session_cookie) if session_cookie else None
+            if not session:
+                return JSONResponse(status_code=401, content={"success": False, "detail": "Unauthorized"})
+
+            # Basic anti-CSRF for state-changing methods: require custom header
+            if request.method in ("POST", "PUT", "PATCH", "DELETE"):
+                if request.headers.get("X-Requested-With") != "XMLHttpRequest":
+                    return JSONResponse(status_code=403, content={"success": False, "detail": "Forbidden"})
+                # Check Origin when present
+                origin = request.headers.get("Origin")
+                if origin:
+                    expected_origin = f"{request.url.scheme}://{request.headers.get('host')}"
+                    if origin != expected_origin:
+                        return JSONResponse(status_code=403, content={"success": False, "detail": "Invalid Origin"})
         response = await call_next(request)
         return response
     except Exception as e:
@@ -122,12 +163,12 @@ _monitoring_task = None
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     """WebSocket endpoint for real-time updates"""
-    # Optional API token check for WebSocket connections
-    if API_TOKEN:
-        provided = websocket.headers.get("x-api-key") or websocket.query_params.get("api_key")
-        if provided != API_TOKEN:
-            await websocket.close(code=1008)
-            return
+    # Session cookie auth for WebSocket
+    session_cookie = websocket.cookies.get(SESSION_COOKIE_NAME)
+    session = verify_session_token(session_cookie) if session_cookie else None
+    if not session:
+        await websocket.close(code=1008)
+        return
 
     await manager.connect(websocket)
     try:
@@ -142,17 +183,69 @@ async def websocket_endpoint(websocket: WebSocket):
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
     """Main dashboard page"""
-    return templates.TemplateResponse("dashboard.html", {"request": request, "api_key": API_TOKEN})
+    # If not logged in, redirect to login page
+    session_cookie = request.cookies.get(SESSION_COOKIE_NAME)
+    session = verify_session_token(session_cookie) if session_cookie else None
+    if not session:
+        return RedirectResponse(url="/login", status_code=302)
+    return templates.TemplateResponse("dashboard.html", {"request": request})
 
 @app.get("/export", response_class=HTMLResponse)
 async def export_page(request: Request):
     """Data export page"""
-    return templates.TemplateResponse("export.html", {"request": request, "api_key": API_TOKEN})
+    session_cookie = request.cookies.get(SESSION_COOKIE_NAME)
+    session = verify_session_token(session_cookie) if session_cookie else None
+    if not session:
+        return RedirectResponse(url="/login", status_code=302)
+    return templates.TemplateResponse("export.html", {"request": request})
 
 @app.get("/settings", response_class=HTMLResponse)
 async def settings_page(request: Request):
     """Settings and management page"""
-    return templates.TemplateResponse("settings.html", {"request": request, "api_key": API_TOKEN})
+    session_cookie = request.cookies.get(SESSION_COOKIE_NAME)
+    session = verify_session_token(session_cookie) if session_cookie else None
+    if not session:
+        return RedirectResponse(url="/login", status_code=302)
+    return templates.TemplateResponse("settings.html", {"request": request})
+
+# Login/logout routes
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
+
+@app.post("/login")
+async def login_submit(request: Request, password: str = Form(...)):
+    # Rate limit per client IP
+    client_ip = request.client.host if request.client else "unknown"
+    q = _login_attempts.setdefault(client_ip, deque())
+    now = time.time()
+    # remove old entries
+    while q and now - q[0] > LOGIN_WINDOW_SECONDS:
+        q.popleft()
+    if len(q) >= LOGIN_MAX_ATTEMPTS:
+        return JSONResponse(status_code=429, content={"success": False, "detail": "Too many attempts. Try later."})
+    q.append(now)
+
+    if password != API_TOKEN:
+        return JSONResponse(status_code=401, content={"success": False, "detail": "Invalid password"})
+    token = create_session_token("admin")
+    response = JSONResponse({"success": True})
+    response.set_cookie(
+        key=SESSION_COOKIE_NAME,
+        value=token,
+        httponly=True,
+        samesite="lax",
+        secure=COOKIE_SECURE,
+        max_age=7*24*3600,
+        path="/",
+    )
+    return response
+
+@app.post("/logout")
+async def logout_submit():
+    response = JSONResponse({"success": True})
+    response.delete_cookie(SESSION_COOKIE_NAME, path="/")
+    return response
 
 # ===== API ROUTES =====
 
