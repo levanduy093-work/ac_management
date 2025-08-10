@@ -15,6 +15,7 @@ import json
 import csv
 import tempfile
 from pathlib import Path
+from dotenv import load_dotenv
 
 # FastAPI imports
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect, Request
@@ -46,6 +47,9 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Load environment variables from .env if present
+load_dotenv()
+
 # Setup static files and templates
 web_dir = Path(__file__).parent
 static_dir = web_dir / "static"
@@ -66,7 +70,7 @@ database = PZEMDatabase(db_path)
 # Set environment variable API_TOKEN to enable protection.
 # When enabled, all requests to /api/* must include header 'X-API-Key: <token>'
 # or query parameter '?api_key=<token>'. Docs (/docs) remain public for discovery.
-API_TOKEN = os.environ.get("API_TOKEN")
+API_TOKEN = os.environ.get("API_TOKEN", "@Levanduy093")
 
 @app.middleware("http")
 async def api_token_middleware(request: Request, call_next):
@@ -138,17 +142,17 @@ async def websocket_endpoint(websocket: WebSocket):
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
     """Main dashboard page"""
-    return templates.TemplateResponse("dashboard.html", {"request": request})
+    return templates.TemplateResponse("dashboard.html", {"request": request, "api_key": API_TOKEN})
 
 @app.get("/export", response_class=HTMLResponse)
 async def export_page(request: Request):
     """Data export page"""
-    return templates.TemplateResponse("export.html", {"request": request})
+    return templates.TemplateResponse("export.html", {"request": request, "api_key": API_TOKEN})
 
 @app.get("/settings", response_class=HTMLResponse)
 async def settings_page(request: Request):
     """Settings and management page"""
-    return templates.TemplateResponse("settings.html", {"request": request})
+    return templates.TemplateResponse("settings.html", {"request": request, "api_key": API_TOKEN})
 
 # ===== API ROUTES =====
 
