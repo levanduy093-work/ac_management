@@ -62,6 +62,30 @@ templates = Jinja2Templates(directory=str(templates_dir))
 db_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'pzem_data.db')
 database = PZEMDatabase(db_path)
 
+# ===== Simple API protection (optional via env var) =====
+# Set environment variable API_TOKEN to enable protection.
+# When enabled, all requests to /api/* must include header 'X-API-Key: <token>'
+# or query parameter '?api_key=<token>'. Docs (/docs) remain public for discovery.
+API_TOKEN = os.environ.get("API_TOKEN")
+
+@app.middleware("http")
+async def api_token_middleware(request: Request, call_next):
+    try:
+        if API_TOKEN and request.url.path.startswith("/api/"):
+            provided = request.headers.get("X-API-Key") or request.query_params.get("api_key")
+            if provided != API_TOKEN:
+                return JSONResponse(
+                    status_code=401,
+                    content={
+                        "success": False,
+                        "detail": "Unauthorized. Provide X-API-Key header or api_key query param.",
+                    },
+                )
+        response = await call_next(request)
+        return response
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"success": False, "detail": str(e)})
+
 # WebSocket manager for real-time updates
 class ConnectionManager:
     def __init__(self):
@@ -94,6 +118,13 @@ _monitoring_task = None
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     """WebSocket endpoint for real-time updates"""
+    # Optional API token check for WebSocket connections
+    if API_TOKEN:
+        provided = websocket.headers.get("x-api-key") or websocket.query_params.get("api_key")
+        if provided != API_TOKEN:
+            await websocket.close(code=1008)
+            return
+
     await manager.connect(websocket)
     try:
         while True:
@@ -738,6 +769,12 @@ async def cleanup_old_data(
 @app.websocket("/ws/realtime")
 async def websocket_endpoint(websocket: WebSocket):
     """WebSocket endpoint for real-time data updates"""
+    # Optional API token check for WebSocket connections
+    if API_TOKEN:
+        provided = websocket.headers.get("x-api-key") or websocket.query_params.get("api_key")
+        if provided != API_TOKEN:
+            await websocket.close(code=1008)
+            return
     await manager.connect(websocket)
     try:
         while True:

@@ -324,12 +324,17 @@
             updateExportButtonText();
         });
         
+        // Format a Date to 'YYYY-MM-DD' in LOCAL timezone for HTML date inputs
+        function toDateInputValueLocal(date) {
+            const adjusted = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+            return adjusted.toISOString().split('T')[0];
+        }
         function setDefaultDates() {
             const today = new Date();
             const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
             
-            document.getElementById('start-date').value = weekAgo.toISOString().split('T')[0];
-            document.getElementById('end-date').value = today.toISOString().split('T')[0];
+            document.getElementById('start-date').value = toDateInputValueLocal(weekAgo);
+            document.getElementById('end-date').value = toDateInputValueLocal(today);
         }
         
         async function loadSensors() {

@@ -198,42 +198,13 @@
             </div>
         </div>
 
-        <!-- Statistics Cards -->
-        <div class="row" id="stats-cards">
-            <div class="col-lg-3 col-md-6">
-                <div class="stat-card text-center">
-                    <div class="icon text-primary">
-                        <i class="bi bi-lightning-charge-fill"></i>
-                    </div>
-                    <div class="value text-primary" id="total-power">0 W</div>
-                    <div class="label">Tổng công suất</div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="stat-card text-center">
-                    <div class="icon text-success">
-                        <i class="bi bi-battery-charging"></i>
-                    </div>
-                    <div class="value text-success" id="total-energy">0 kWh</div>
-                    <div class="label">Tổng năng lượng</div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="stat-card text-center">
-                    <div class="icon text-warning">
-                        <i class="bi bi-speedometer"></i>
-                    </div>
-                    <div class="value text-warning" id="avg-voltage">0 V</div>
-                    <div class="label">Điện áp trung bình</div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="stat-card text-center">
-                    <div class="icon text-info">
-                        <i class="bi bi-hdd-network"></i>
-                    </div>
-                    <div class="value text-info" id="sensor-count">0</div>
-                    <div class="label">Số cảm biến</div>
+        <!-- Removed aggregate stat cards as requested -->
+
+        <!-- Selected Sensor Stats (cards) -->
+        <div class="row" id="selected-stats-section">
+            <div class="col-12">
+                <div class="row" id="selected-stats-cards">
+                    <!-- Filled by JS: 6-7 stat cards for the selected sensor or aggregated -->
                 </div>
             </div>
         </div>
@@ -457,9 +428,14 @@
             }
         });
         
+        // Format a Date to 'YYYY-MM-DD' in LOCAL timezone for HTML date inputs
+        function toDateInputValueLocal(date) {
+            const adjusted = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+            return adjusted.toISOString().split('T')[0];
+        }
         function setDefaultDates() {
             const today = new Date();
-            const iso = today.toISOString().split('T')[0];
+            const iso = toDateInputValueLocal(today);
             document.getElementById('start-date').value = iso;
             document.getElementById('end-date').value = iso;
         }
@@ -468,12 +444,14 @@
             showLoading(true);
             try {
                 await loadSensors();
-                // Load stats cards (aggregated), independent of date range
+                // Load detailed stats cards section
                 await loadDashboardData();
                 // Preload charts with correct full selected day first to avoid flicker
                 await applyDateFilter();
                 // Load latest measurements with default limit for table
                 await loadMeasurements(currentLimit);
+                // Load quick metrics from the most recent point across all sensors
+                await loadQuickMetrics();
                 // Enable realtime by default
                 if (!isRealtimeEnabled) {
                     toggleRealtime();
@@ -508,37 +486,11 @@
                 
                 // Update statistics cards based on selection
                 if (selectedPort) {
-                    // Single sensor data - show current values
-                    document.getElementById('total-power').textContent = 
-                        data.summary.total_power.toFixed(1) + ' W';
-                    document.getElementById('total-energy').textContent = 
-                        (data.summary.total_energy / 1000).toFixed(2) + ' kWh';
-                    document.getElementById('avg-voltage').textContent = 
-                        data.summary.avg_voltage.toFixed(1) + ' V';
-                    document.getElementById('sensor-count').textContent = 
-                        data.summary.sensor_count;
-                        
-                    // Update labels to indicate single sensor view
-                    document.querySelector('#total-power').closest('.stat-card').querySelector('.label').textContent = 'Công suất hiện tại';
-                    document.querySelector('#total-energy').closest('.stat-card').querySelector('.label').textContent = 'Năng lượng hiện tại';
-                    document.querySelector('#avg-voltage').closest('.stat-card').querySelector('.label').textContent = 'Điện áp hiện tại';
-                    document.querySelector('#sensor-count').closest('.stat-card').querySelector('.label').textContent = 'Cảm biến được chọn';
+                    // Render detailed stat cards for selected sensor
+                    renderSelectedStatsCards(data.latest_measurements && data.latest_measurements[0], selectedPort);
                 } else {
-                    // All sensors data - show aggregated values
-                    document.getElementById('total-power').textContent = 
-                        data.summary.total_power.toFixed(1) + ' W';
-                    document.getElementById('total-energy').textContent = 
-                        (data.summary.total_energy / 1000).toFixed(2) + ' kWh';
-                    document.getElementById('avg-voltage').textContent = 
-                        data.summary.avg_voltage.toFixed(1) + ' V';
-                    document.getElementById('sensor-count').textContent = 
-                        data.summary.sensor_count;
-                        
-                    // Reset labels to default
-                    document.querySelector('#total-power').closest('.stat-card').querySelector('.label').textContent = 'TỔNG CÔNG SUẤT';
-                    document.querySelector('#total-energy').closest('.stat-card').querySelector('.label').textContent = 'TỔNG NĂNG LƯỢNG';
-                    document.querySelector('#avg-voltage').closest('.stat-card').querySelector('.label').textContent = 'ĐIỆN ÁP TRUNG BÌNH';
-                    document.querySelector('#sensor-count').closest('.stat-card').querySelector('.label').textContent = 'SỐ CẢM BIẾN';
+                    // Build aggregated stats as cards too (from prepared latest point per port)
+                    await renderAggregatedSelectedStatsCards();
                 }
                 
                 // Charts are updated via date-range fetch to avoid brief zoom to recent minutes
@@ -547,6 +499,120 @@
             } else {
                 throw new Error('Failed to load dashboard data');
             }
+        }
+
+        async function loadQuickMetrics() {
+            try {
+                // Fetch a small set of latest measurements for all sensors
+                const resp = await fetch('/api/measurements?limit=6');
+                const json = await resp.json();
+                if (!json.success || !Array.isArray(json.data) || json.data.length === 0) return;
+
+                // Take the most recent entry per port then aggregate for display
+                const latestByPort = new Map();
+                for (const m of json.data) {
+                    if (!latestByPort.has(m.port)) latestByPort.set(m.port, m);
+                }
+                const latest = Array.from(latestByPort.values());
+
+                // Aggregate: voltage avg, current sum, power sum, energy sum, frequency avg, pf avg, alarm if any
+                const avg = (arr) => arr.reduce((a,b)=>a+(Number(b)||0),0) / (arr.length || 1);
+                const sum = (arr) => arr.reduce((a,b)=>a+(Number(b)||0),0);
+                const volt = avg(latest.map(m => m.voltage || 0));
+                const curr = sum(latest.map(m => m.current || 0));
+                const pow  = sum(latest.map(m => m.power || 0));
+                const ener = sum(latest.map(m => m.energy || 0));
+                const freq = avg(latest.map(m => m.frequency || 0));
+                const pf   = avg(latest.map(m => m.power_factor || 0));
+                const alarmOn = latest.some(m => Boolean(m.alarm_status));
+
+                const el = document.getElementById('quick-metrics');
+                if (!el) return;
+                el.innerHTML = `
+                    <span><strong>Voltage (V)</strong>: ${volt.toFixed(1)}</span>
+                    <span>| <strong>Current (A)</strong>: ${curr.toFixed(3)}</span>
+                    <span>| <strong>Power (W)</strong>: ${pow.toFixed(1)}</span>
+                    <span>| <strong>Energy (Wh)</strong>: ${ener.toFixed(0)}</span>
+                    <span>| <strong>Frequency (Hz)</strong>: ${freq.toFixed(1)}</span>
+                    <span>| <strong>Power Factor</strong>: ${pf.toFixed(2)}</span>
+                    <span>| <strong>Alarm</strong>: ${alarmOn ? '<span class="text-danger">ON</span>' : '<span class="text-success">OFF</span>'}</span>
+                `;
+            } catch (e) {
+                console.warn('Quick metrics load failed:', e);
+            }
+        }
+
+        function statCard(icon, colorClass, valueHtml, labelText) {
+            return `
+                <div class="col-lg-3 col-md-6">
+                    <div class="stat-card text-center">
+                        <div class="icon ${colorClass}"><i class="bi bi-${icon}"></i></div>
+                        <div class="value ${colorClass}">${valueHtml}</div>
+                        <div class="label">${labelText}</div>
+                    </div>
+                </div>`;
+        }
+
+        function formatWorKW(valueW) {
+            const abs = Math.abs(Number(valueW) || 0);
+            if (abs >= 1000) {
+                return `${(valueW / 1000).toFixed(2)} kW`;
+            }
+            return `${(Number(valueW) || 0).toFixed(1)} W`;
+        }
+
+        function renderSelectedStatsCards(latest, selectedPort) {
+            const container = document.getElementById('selected-stats-cards');
+            if (!container || !latest) { container.innerHTML = ''; return; }
+            const alarmOn = latest.alarm_status ? 'ON' : 'OFF';
+            const alarmHtml = latest.alarm_status ? '<span class="text-danger">ON</span>' : '<span class="text-success">OFF</span>';
+            // Header badge card to indicate current selection
+            const header = selectedPort
+                ? statCard('pin-map', 'text-info', `${selectedPort}`, 'Cảm biến đang xem')
+                : statCard('collection', 'text-info', 'TẤT CẢ', 'Chế độ hiển thị');
+            const energyWh = `${(latest.energy || 0).toFixed(2)} Wh`;
+            const powerWStr = formatWorKW(latest.power || 0);
+            container.innerHTML = header +
+                statCard('speedometer2', 'text-warning', `${(latest.voltage||0).toFixed(1)} V`, 'Voltage (V)') +
+                statCard('activity', 'text-success', `${(latest.current||0).toFixed(3)} A`, 'Current (A)') +
+                statCard('lightning-charge-fill', 'text-primary', `${powerWStr}`, 'Power (W/kW)') +
+                statCard('battery-charging', 'text-success', `${energyWh}`, 'Energy (Wh)') +
+                statCard('broadcast', 'text-info', `${(latest.frequency||0).toFixed(1)} Hz`, 'Frequency (Hz)') +
+                statCard('percent', 'text-secondary', `${(latest.power_factor||0).toFixed(2)}`, 'Power Factor') +
+                statCard('bell', latest.alarm_status ? 'text-danger' : 'text-success', `${alarmHtml}`, 'Alarm');
+        }
+
+        async function renderAggregatedSelectedStatsCards() {
+            const container = document.getElementById('selected-stats-cards');
+            if (!container) return;
+            // Use recent measurements to aggregate
+            const resp = await fetch('/api/measurements?limit=6');
+            const json = await resp.json();
+            if (!json.success || !json.data || json.data.length === 0) { container.innerHTML = ''; return; }
+            const latestByPort = new Map();
+            for (const m of json.data) if (!latestByPort.has(m.port)) latestByPort.set(m.port, m);
+            const latest = Array.from(latestByPort.values());
+            const avg = (arr) => arr.reduce((a,b)=>a+(Number(b)||0),0) / (arr.length || 1);
+            const sum = (arr) => arr.reduce((a,b)=>a+(Number(b)||0),0);
+            const volt = avg(latest.map(m => m.voltage || 0));
+            const curr = sum(latest.map(m => m.current || 0));
+            const pow  = sum(latest.map(m => m.power || 0)); // Watts
+            const enerKWh = sum(latest.map(m => m.energy || 0)); // (giữ nguyên giá trị)
+            const freq = avg(latest.map(m => m.frequency || 0));
+            const pf   = avg(latest.map(m => m.power_factor || 0));
+            const alarmOn = latest.some(m => Boolean(m.alarm_status));
+            const alarmHtml = alarmOn ? '<span class="text-danger">ON</span>' : '<span class="text-success">OFF</span>';
+            const energyWh = `${enerKWh.toFixed(2)} Wh`;
+            const powerWStr = formatWorKW(pow);
+            // Header indicates ALL sensors
+            container.innerHTML = statCard('collection', 'text-info', 'TẤT CẢ', 'Chế độ hiển thị') +
+                statCard('speedometer2', 'text-warning', `${volt.toFixed(1)} V`, 'Voltage (V)') +
+                statCard('activity', 'text-success', `${curr.toFixed(3)} A`, 'Current (A)') +
+                statCard('lightning-charge-fill', 'text-primary', `${powerWStr}`, 'Power (W/kW)') +
+                statCard('battery-charging', 'text-success', `${energyWh}`, 'Energy (Wh)') +
+                statCard('broadcast', 'text-info', `${freq.toFixed(1)} Hz`, 'Frequency (Hz)') +
+                statCard('percent', 'text-secondary', `${pf.toFixed(2)}`, 'Power Factor') +
+                statCard('bell', alarmOn ? 'text-danger' : 'text-success', `${alarmHtml}`, 'Alarm');
         }
         
         async function loadSensors() {
@@ -982,8 +1048,9 @@
                             }
                         }
 
-                        // Then refresh stats/cards and table data
-                        await loadDashboardData(selectedPort);
+                // Then refresh stats/cards, quick metrics and table data
+                await loadDashboardData(selectedPort);
+                await loadQuickMetrics();
                         
                         if (selectedPort) {
                             const response = await fetch(`/api/measurements?port=${encodeURIComponent(selectedPort)}&limit=${currentLimit}`);
