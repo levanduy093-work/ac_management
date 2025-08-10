@@ -101,18 +101,15 @@ git clone https://github.com/levanduy093-work/ac_management.git
 cd ac_management
 pip install -r requirements.txt
 
-# Start data collection (Terminal 1)
-make run-monitor-db
-
-# Start web dashboard (Terminal 2)
-make run-web
+# Start full stack (monitor + web)
+make run-server
 
 # Access: http://localhost:8000
 ```
 
 ### 2. Production Deployment
 
-#### Using run_web.py (Recommended) ⭐
+#### Using run_web.py (Local) ⭐
 ```bash
 # Production mode với health checks
 python run_web.py --host 0.0.0.0 --port 8000
@@ -143,13 +140,15 @@ uvicorn api:app --host 0.0.0.0 --port 8000 --workers 4 --log-level info
 - **🏠 Main Dashboard**: http://localhost:8000
 - **📁 Export Center**: http://localhost:8000/export  
 - **⚙️ System Settings**: http://localhost:8000/settings
-- **📚 API Documentation**: http://localhost:8000/docs
-- **🔄 Health Check**: http://localhost:8000/api/health
+- **🔐 Login**: http://localhost:8000/login
+- **📚 API Documentation**: http://localhost:8000/docs (có thể tắt bằng `DISABLE_DOCS=true`)
 
 ### 4. Mobile Development
 - **📱 Base API URL**: `http://localhost:8000/api/`
 - **🔌 WebSocket**: `ws://localhost:8000/ws/realtime`
 - **📖 Interactive Docs**: `http://localhost:8000/docs`
+
+Auth note: Hệ thống sử dụng cơ chế đăng nhập bằng cookie (HTTP-only). Client cần mở `/login` để lấy phiên trước khi gọi API. Không sử dụng API key trong URL/header ở production.
 
 ## 📊 Demo với dữ liệu
 
@@ -499,3 +498,10 @@ make run-web
 ---
 
 **🌟 AC Management v2.1.0+** - From hardware monitoring đến production web dashboard, everything you need cho professional PZEM-004T power monitoring.
+
+## 🔐 Security Notes
+- ✅ Session-based authentication (cookie HttpOnly), trang `/login`
+- ✅ CSRF: yêu cầu header `X-Requested-With: XMLHttpRequest` cho POST/DELETE/PUT/PATCH
+- ✅ Origin check cho state-changing requests
+- ✅ Có thể tắt `/docs` bằng `DISABLE_DOCS=true`
+- ✅ Đề xuất chạy sau reverse proxy/Tunnel (HTTPS)

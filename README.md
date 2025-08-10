@@ -133,11 +133,8 @@ pip install -r requirements.txt
 
 ### Cách nhanh nhất (2 phút setup)
 ```bash
-# Terminal 1: Start data collection
-make run-monitor-db
-
-# Terminal 2: Start web dashboard  
-make run-web
+# Chạy cả monitor + web (stack đầy đủ)
+make run-server
 
 # Access dashboard: http://localhost:8000
 ```
@@ -152,10 +149,11 @@ python run_web.py
 ```
 
 ### Truy cập nhanh
+- **Login**: http://localhost:8000/login
 - **Dashboard**: http://localhost:8000
 - **Export**: http://localhost:8000/export
 - **Settings**: http://localhost:8000/settings
-- **API Docs**: http://localhost:8000/docs
+- **API Docs**: http://localhost:8000/docs (có thể tắt trong production)
 - **WebSocket**: ws://localhost:8000/ws hoặc ws://localhost:8000/ws/realtime
 
 ## 💾 Database
@@ -284,10 +282,12 @@ WS   /ws, /ws/realtime                                # Real-time
 ### Features cho Mobile Development
 - ✅ **17+ REST endpoints** với consistent JSON responses
 - ✅ **WebSocket real-time** communication
-- ✅ **CORS support** cho cross-origin requests
-- ✅ **Auto-generated documentation** tại `/docs`
+- ✅ **Cookie-based auth** (login tại `/login`, không dùng API key)
+- ✅ **Auto-generated documentation** tại `/docs` (có thể tắt)
 - ✅ **Error handling** với proper HTTP status codes
 - ✅ **Data pagination** và filtering support
+  
+Lưu ý: Với ứng dụng mobile/web client khác origin, khuyến nghị sử dụng reverse proxy cùng domain (hoặc Cloudflare Tunnel) để chia sẻ cookie phiên an toàn.
 
 ## 🔧 Khắc phục sự cố
 
@@ -334,7 +334,13 @@ ls -la data/pzem_data.db
 
 ## 📈 Roadmap & Development
 
-### ✅ Version 2.2.0 (Current) - Production Ready
+### ✅ Version 2.3.0 (Current) - Security & Deployment
+- [x] Session-based authentication (cookie HttpOnly) và trang `/login`
+- [x] CSRF protection cho POST/DELETE/PUT/PATCH (`X-Requested-With` + Origin check)
+- [x] Tắt `/docs` trong production qua `DISABLE_DOCS=true`
+- [x] Hướng dẫn triển khai domain (Cloudflare Tunnel) và systemd stack (`acm.target`)
+
+### 2.2.0 - Production Web Dashboard
 - [x] Complete web dashboard với real-time monitoring
 - [x] 17+ REST API endpoints hoàn chỉnh  
 - [x] Advanced export system với filtering
@@ -359,9 +365,9 @@ ls -la data/pzem_data.db
 ## 📚 Tài liệu tham khảo
 
 ### 🌐 Web Dashboard & API
-- **[WEB_DASHBOARD_GUIDE.md](WEB_DASHBOARD_GUIDE.md)**: Complete web dashboard guide (470+ dòng)
-- **[web/README.md](web/README.md)**: API documentation và deployment
-- **`http://localhost:8000/docs`**: Auto-generated Swagger UI
+- **[WEB_DASHBOARD_GUIDE.md](WEB_DASHBOARD_GUIDE.md)**: Complete web dashboard guide
+- **[DEPLOYMENT.md](DEPLOYMENT.md)**: Hướng dẫn đưa dự án lên domain (Cloudflare Tunnel hoặc Nginx/Caddy)
+- **`http://localhost:8000/docs`**: Auto-generated Swagger UI (có thể tắt)
 
 ### 📖 Core System Documentation  
 - **[docs/PZEM004T.md](docs/PZEM004T.md)**: Library API reference (570+ dòng)

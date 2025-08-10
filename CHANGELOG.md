@@ -2,7 +2,22 @@
 
 Tất cả các thay đổi quan trọng trong dự án này sẽ được ghi lại trong file này.
 
-## [2.2.0] - 2025-08-09 (Current)
+## [2.3.0] - 2025-08-10 (Current)
+
+### 🔒 Security & Deployment
+- **Session-based authentication** với trang `/login` (cookie HttpOnly)
+- **CSRF protection**: yêu cầu header `X-Requested-With` và kiểm `Origin`
+- **Docs toggle**: tắt `/docs` trong production qua `DISABLE_DOCS=true`
+- **Cloudflare Tunnel deployment**: thêm `DEPLOYMENT.md` và systemd stack (`acm.target`)
+- **Docs update**: README, WEB_DASHBOARD_GUIDE, PROJECT_STRUCTURE, DATABASE.md, DATA_LOGGING.md, WEB_ENV_SETUP.md
+
+### 🛠 Changes
+- Thêm lệnh `make run-server` vào hướng dẫn (quick start)
+- Cập nhật templates để bỏ cơ chế API key
+
+---
+
+## [2.2.0] - 2025-08-09
 
 ### 🌐 Web Dashboard & Production Release
 

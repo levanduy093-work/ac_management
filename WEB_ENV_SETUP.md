@@ -10,7 +10,7 @@ Steps:
 
 2. Start the web server:
    
-   - `make run-web` (or `python run_web.py`)
+   - `make run-server` (monitor + web) hoặc `make run-web`
 
 3. New auth model (production-ready):
    - Visit `/login` and enter your password (the value of `API_TOKEN`).
@@ -18,6 +18,6 @@ Steps:
 
 Notes:
 - Docs (`/docs`) can be disabled in production via `DISABLE_DOCS=true`.
-- Cookies are HTTP-only; for Internet deployment behind HTTPS, set `COOKIE_SECURE=true`.
-- State-changing APIs require header `X-Requested-With: XMLHttpRequest` to mitigate CSRF.
+- Cookies are HTTP-only; for Internet deployment behind HTTPS/Cloudflare Tunnel, set `COOKIE_SECURE=true`.
+- State-changing APIs require header `X-Requested-With: XMLHttpRequest` to mitigate CSRF; Origin is also verified.
 

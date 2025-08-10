@@ -55,11 +55,10 @@ CREATE TABLE measurements (
 ### 🌐 Method 1: Web Dashboard (Recommended) ⭐
 
 ```bash
-# Start data collection + web dashboard
-make run-monitor-db  # Terminal 1
-make run-web         # Terminal 2
+# Start data collection + web dashboard (stack)
+make run-server
 
-# Access: http://localhost:8000
+# Access: http://localhost:8000 (login at /login)
 # Features: Real-time monitoring, export, system management
 ```
 

@@ -16,6 +16,7 @@ ac_management/
 │   ├── api.py                # FastAPI server (REST + WebSocket)
 │   ├── static/               # CSS, JS, assets
 │   ├── templates/            # HTML templates
+│   │   ├── login.html        # Login page (session-based auth)
 │   │   ├── dashboard.html    # Main dashboard
 │   │   ├── export.html       # Data export page
 │   │   └── settings.html     # System settings
@@ -76,7 +77,7 @@ ac_management/
   - System health monitoring
 - **Mobile-ready**: CORS support, proper response formats
 - **Background tasks**: USB monitoring, real-time updates
-- **Security**: Input validation, error handling
+- **Security**: Session-based auth (cookie HttpOnly), CSRF header + Origin check, input validation
 
 #### `web/templates/` - HTML Templates
 - **`dashboard.html`**: Main monitoring interface với Chart.js
@@ -172,7 +173,7 @@ ac_management/
 
 #### `Makefile` (130 dòng) - Development Workflow ⭐
 - **Complete project automation** với 25+ commands
-- **Quick start**: `make run-monitor-db`, `make run-web`
+- **Quick start**: `make run-server` (stack) hoặc `make run-monitor-db`, `make run-web`
 - **Database operations**: stats, cleanup, migration
 - **Development tools**: lint, format, test
 - **Documentation**: `make docs`
@@ -185,6 +186,8 @@ ac_management/
   - `tabulate`, `pandas`: Data processing
   - `websockets`: Real-time communication
   - `jinja2`, `aiofiles`: Web templating
+  - `python-dotenv`: Load environment from `.env`
+  - `itsdangerous`: Signed session token helper
 
 ### 📊 Data Storage (`data/`)
 
@@ -215,6 +218,7 @@ ac_management/
 - **Installation instructions** và requirements
 - **Usage examples** cho tất cả major features
 - **Architecture overview** và development roadmap
+- **Deployment links**: `DEPLOYMENT.md`, `WEB_ENV_SETUP.md`
 
 #### `PROJECT_STRUCTURE.md` - This File
 - **Complete project structure** documentation

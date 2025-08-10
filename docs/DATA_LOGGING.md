@@ -107,6 +107,9 @@ make run-monitor
 python tools/read_ac_sensor_db.py
 # hoặc
 make run-monitor-db
+
+# Chạy full stack (monitor + web)
+make run-server
 ```
 
 ### 3. Xem dữ liệu
