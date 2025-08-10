@@ -120,11 +120,19 @@ async def session_auth_middleware(request: Request, call_next):
             if request.method in ("POST", "PUT", "PATCH", "DELETE"):
                 if request.headers.get("X-Requested-With") != "XMLHttpRequest":
                     return JSONResponse(status_code=403, content={"success": False, "detail": "Forbidden"})
-                # Check Origin when present
+                # Check Origin when present (support reverse proxy/tunnel)
                 origin = request.headers.get("Origin")
                 if origin:
-                    expected_origin = f"{request.url.scheme}://{request.headers.get('host')}"
-                    if origin != expected_origin:
+                    host = request.headers.get("x-forwarded-host") or request.headers.get("host") or ""
+                    allowed = set()
+                    if host:
+                        allowed.add(f"https://{host}")
+                        allowed.add(f"http://{host}")
+                    # Also allow explicit scheme from forwarded proto if present
+                    xf_proto = request.headers.get("x-forwarded-proto")
+                    if xf_proto and host:
+                        allowed.add(f"{xf_proto}://{host}")
+                    if origin not in allowed:
                         return JSONResponse(status_code=403, content={"success": False, "detail": "Invalid Origin"})
         response = await call_next(request)
         return response
