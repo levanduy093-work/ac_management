@@ -1,6 +1,6 @@
 # Makefile for PZEM-004T Power Monitoring Project
 
-.PHONY: help install install-dev test clean lint format docs run-monitor run-reset run-web
+.PHONY: help install install-dev test clean lint format docs run-monitor run-reset run-web run-server
 
 # Default target
 help:
@@ -26,6 +26,7 @@ help:
 	@echo "  db-gui       - Interactive database GUI tool"
 	@echo "  run-web      - Start web dashboard server"
 	@echo "  run-web-dev  - Start web server in development mode"
+	@echo "  run-server   - Start monitor and web together"
 
 # Install dependencies
 install:
@@ -116,6 +117,10 @@ run-web:
 
 run-web-dev:
 	python run_web.py --reload
+
+# Orchestrator: start monitor and web together
+run-server:
+	$(MAKE) -j 2 run-monitor-db run-web
 
 # Quick start
 quick-start: install
