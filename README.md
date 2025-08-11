@@ -442,3 +442,5 @@ Chúng tôi hoan nghênh mọi đóng góp!
 ---
 
 **🏆 AC Management v2.2.0** - Production-ready PZEM-004T monitoring system với comprehensive web dashboard, mobile-ready API, và advanced database management. Designed for **reliability**, **scalability**, và **ease of use**.
+
+Demo: PR workflow test (ignore)
